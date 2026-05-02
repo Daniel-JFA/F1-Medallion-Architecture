@@ -23,10 +23,10 @@ Databricks SQL/Spark SQL no entiende esa sintaxis y devuelve errores como:
 
 ## Opcion Recomendada Desde DBeaver
 
-Si estas conectado a Databricks desde DBeaver y quieres cargar todo sin depender de volumenes externos, ejecuta este archivo:
+Si estas conectado a Databricks desde DBeaver y quieres cargar todo en una sola ejecucion, sin depender de volumenes externos ni archivos separados, ejecuta este archivo:
 
 ```text
-database/databricks/F1_databricks_full_rebuild_inserts.sql
+database/databricks/F1_databricks_one_sql_with_inserts.sql
 ```
 
 Ese archivo ya incluye:
@@ -35,9 +35,12 @@ Ese archivo ya incluye:
 - carga de datos con `INSERT`
 - construccion de `f1_silver`
 - construccion de `f1_gold`
+- construccion de `f1_control`
 - consultas de validacion
 
 No requiere subir CSV a Databricks.
+
+El archivo anterior `F1_databricks_full_rebuild_inserts.sql` se mantiene por compatibilidad, pero no incluye `f1_control`. Para el equipo, el archivo recomendado es `F1_databricks_one_sql_with_inserts.sql`.
 
 Usa estos archivos en este orden:
 
@@ -48,7 +51,7 @@ Usa estos archivos en este orden:
 5. `F1_databricks_gold.sql`
 6. `F1_databricks_control.sql` opcional si quieres versionar snapshots de KPIs
 
-Ese orden separado requiere que `F1_databricks_load.sql` apunte a una ruta de CSV accesible por Databricks. Si no tienes esa ruta configurada, usa mejor `F1_databricks_full_rebuild_inserts.sql`.
+Ese orden separado requiere que `F1_databricks_load.sql` apunte a una ruta de CSV accesible por Databricks. Si no tienes esa ruta configurada, usa mejor `F1_databricks_one_sql_with_inserts.sql`.
 
 ## Flujo recomendado
 

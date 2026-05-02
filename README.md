@@ -254,10 +254,10 @@ es un dump de MySQL/MariaDB. Si se ejecuta en Databricks, fallara con errores de
 [PARSE_SYNTAX_ERROR] Syntax error at or near end of input
 ```
 
-Para Databricks usa:
+Para Databricks usa el SQL unico con inserts:
 
 ```text
-database/databricks/F1_databricks_full_rebuild_inserts.sql
+database/databricks/F1_databricks_one_sql_with_inserts.sql
 ```
 
 ### Restaurar En Linux
@@ -397,7 +397,7 @@ Databricks no usa sintaxis MySQL. Por eso no debes ejecutar el dump de `sql_expo
 Usa este archivo:
 
 ```text
-database/databricks/F1_databricks_full_rebuild_inserts.sql
+database/databricks/F1_databricks_one_sql_with_inserts.sql
 ```
 
 Ese archivo es compatible con Databricks SQL y ya incluye:
@@ -406,6 +406,7 @@ Ese archivo es compatible con Databricks SQL y ya incluye:
 - carga de datos con `INSERT`
 - construccion de `f1_silver`
 - construccion de `f1_gold`
+- construccion de `f1_control`
 - consultas de validacion
 
 ### Archivo Que No Debes Ejecutar En Databricks
@@ -426,7 +427,7 @@ Spark SQL no entiende esas instrucciones.
 
 ### Validacion En Databricks
 
-Despues de ejecutar `F1_databricks_full_rebuild_inserts.sql`, valida:
+Despues de ejecutar `F1_databricks_one_sql_with_inserts.sql`, valida:
 
 ```sql
 SELECT * FROM f1_gold.vw_dashboard_kpi_cards;
@@ -435,11 +436,7 @@ SELECT COUNT(*) AS mart_constructor_season_rows FROM f1_gold.mart_constructor_se
 SELECT COUNT(*) AS mart_race_weekend_rows FROM f1_gold.mart_race_weekend;
 ```
 
-Si quieres la capa de snapshots despues de Gold, ejecuta:
-
-```text
-database/databricks/F1_databricks_control.sql
-```
+La capa de snapshots queda incluida en el mismo archivo. El snapshot esperado es `equipo_2026_05_02`.
 
 ## Ejecutar El Dashboard En Linux
 
