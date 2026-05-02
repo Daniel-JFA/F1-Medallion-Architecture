@@ -20,6 +20,7 @@ Validado el `2026-05-02` sobre MySQL local en Linux. El equipo puede restaurar y
 - KPIs congelados: `10`
 - Dump recomendado para compartir: `sql_exports/F1_full_project_2026_05_02_portable.sql`
 - Checksum SHA-256: `sql_exports/F1_full_project_2026_05_02_portable.sql.sha256`
+- Manifiesto de consolidacion: `CONSOLIDATION_MANIFEST.md`
 - URL local esperada: `http://127.0.0.1:8501`
 
 ## Que Incluye El Proyecto
@@ -36,11 +37,13 @@ En Windows, la ruta dependera de donde el equipo copie el proyecto. Un ejemplo p
 C:\Users\TU_USUARIO\Documents\f1_gold_streamlit
 ```
 
-La carpeta donde vive la base, los scripts SQL y los respaldos es:
+La carpeta historica donde antes vivian la base, los scripts SQL y muchos respaldos era:
 
 ```bash
 "/home/djfa/Dev/DBs BackUps"
 ```
+
+El proyecto quedo consolidado en `f1_gold_streamlit`. La carpeta `DBs BackUps` ya no debe ser necesaria para ejecutar el dashboard ni para restaurar el dump compartible.
 
 Contenido importante:
 
@@ -51,23 +54,20 @@ Contenido importante:
 - `stop_streamlit.sh`: detiene el dashboard local.
 - `run_public_tunnel.sh`: abre tunel publico con Cloudflare.
 - `stop_public_tunnel.sh`: detiene el tunel publico.
+- `CONSOLIDATION_MANIFEST.md`: lista lo que ya fue consolidado dentro de este proyecto.
 - `sql_exports/F1_full_project_2026_05_02_portable.sql`: dump SQL portable incluido en este proyecto.
 - `sql_exports/F1_full_project_2026_05_02_portable.sql.sha256`: checksum del dump incluido en este proyecto.
-
-Contenido auxiliar en la carpeta historica de respaldos:
-
-- `/home/djfa/Dev/DBs BackUps/DB F1/*.csv`: CSV originales.
-- `/home/djfa/Dev/DBs BackUps/F1.sql`: dump/base relacional inicial.
-- `/home/djfa/Dev/DBs BackUps/import_f1.py`: importador CSV a MySQL.
-- `/home/djfa/Dev/DBs BackUps/F1_relationships.sql`: crea llaves foraneas sobre `F1`.
-- `/home/djfa/Dev/DBs BackUps/F1_mysql_silver.sql`: reconstruye `F1_silver`.
-- `/home/djfa/Dev/DBs BackUps/F1_mysql_gold.sql`: reconstruye `F1_gold`.
-- `/home/djfa/Dev/DBs BackUps/F1_gold_kpi_history.sql`: guarda snapshots en `F1_control`.
-- `/home/djfa/Dev/DBs BackUps/F1_refresh_layers.sh`: ejecuta el refresco completo.
-- `/home/djfa/Dev/DBs BackUps/F1_freeze_kpis.sh`: congela KPIs con una etiqueta.
-- `/home/djfa/Dev/DBs BackUps/exports/F1_full_project_2026_05_02_portable.sql`: copia original del dump portable.
-- `/home/djfa/Dev/DBs BackUps/exports/F1_full_project_2026_05_02_portable.sql.sha256`: copia original del checksum.
-- `/home/djfa/Dev/DBs BackUps/exports/F1_full_project_2026_05_02.sql`: dump original generado por `mysqldump`.
+- `database/source_csv/DB F1/*.csv`: CSV originales.
+- `database/source_csv/import_f1.py`: importador CSV a MySQL.
+- `database/mysql/F1_relationships.sql`: crea llaves foraneas sobre `F1`.
+- `database/mysql/F1_mysql_silver.sql`: reconstruye `F1_silver`.
+- `database/mysql/F1_mysql_gold.sql`: reconstruye `F1_gold`.
+- `database/mysql/F1_gold_kpi_history.sql`: guarda snapshots en `F1_control`.
+- `database/mysql/F1_refresh_layers.sh`: ejecuta el refresco completo.
+- `database/mysql/F1_freeze_kpis.sh`: congela KPIs con una etiqueta.
+- `database/databricks/`: scripts y documentacion Databricks.
+- `docs/`: documentacion historica y de entrega.
+- `assets/F1.png`: diagrama/imagen del proyecto.
 
 ## Bases De Datos
 
@@ -311,12 +311,12 @@ El hash calculado debe coincidir con el hash guardado en el archivo `.sha256`.
 
 ## Reconstruir Capas Desde La Base `F1`
 
-Esta seccion aplica principalmente a la maquina Linux donde viven los scripts historicos en `/home/djfa/Dev/DBs BackUps`. Para el equipo en Windows, lo recomendado es restaurar el dump portable incluido en `sql_exports`.
+Para el equipo en Windows, lo recomendado es restaurar el dump portable incluido en `sql_exports`. Esta seccion es para reconstruir las capas desde la base `F1` cuando se trabaja en Linux o WSL.
 
 Si ya existe `F1` y quieres regenerar Silver, Gold y Control:
 
 ```bash
-cd "/home/djfa/Dev/DBs BackUps"
+cd /home/djfa/Dev/f1_gold_streamlit/database/mysql
 ./F1_refresh_layers.sh equipo_2026_05_02
 ```
 
@@ -331,14 +331,14 @@ Ese comando hace lo siguiente:
 Para refrescar sin congelar snapshot:
 
 ```bash
-cd "/home/djfa/Dev/DBs BackUps"
+cd /home/djfa/Dev/f1_gold_streamlit/database/mysql
 ./F1_refresh_layers.sh
 ```
 
 Para congelar KPIs despues de un refresco:
 
 ```bash
-cd "/home/djfa/Dev/DBs BackUps"
+cd /home/djfa/Dev/f1_gold_streamlit/database/mysql
 ./F1_freeze_kpis.sh nombre_del_snapshot
 ```
 
@@ -347,8 +347,8 @@ cd "/home/djfa/Dev/DBs BackUps"
 Cuando las bases ya esten listas, generar un respaldo nuevo:
 
 ```bash
-cd "/home/djfa/Dev/DBs BackUps"
-mkdir -p exports
+cd /home/djfa/Dev/f1_gold_streamlit
+mkdir -p sql_exports
 mysqldump --ssl=0 \
   -h 127.0.0.1 \
   -P 3306 \
@@ -359,7 +359,7 @@ mysqldump --ssl=0 \
   --events \
   --triggers \
   --databases F1 F1_silver F1_gold F1_control \
-  > exports/F1_full_project_YYYY_MM_DD.sql
+  > sql_exports/F1_full_project_YYYY_MM_DD.sql
 ```
 
 El dump recomendado para compartir ahora es la version portable incluida dentro de este proyecto, sin `DEFINER` fijo de MySQL:
@@ -384,16 +384,10 @@ O usando el lanzador preparado:
 /home/djfa/Dev/f1_gold_streamlit/run_streamlit.sh
 ```
 
-O desde la carpeta de respaldos:
-
-```bash
-"/home/djfa/Dev/DBs BackUps/F1_gold_dashboard.sh"
-```
-
 Para detenerlo:
 
 ```bash
-"/home/djfa/Dev/DBs BackUps/F1_gold_dashboard_stop.sh"
+./stop_streamlit.sh
 ```
 
 El lanzador:
@@ -439,13 +433,13 @@ Esta seccion aplica a Linux con los scripts incluidos. En Windows se recomienda 
 Para abrir un tunel publico:
 
 ```bash
-"/home/djfa/Dev/DBs BackUps/F1_gold_publico.sh"
+./run_public_tunnel.sh
 ```
 
 Para detenerlo:
 
 ```bash
-"/home/djfa/Dev/DBs BackUps/F1_gold_publico_stop.sh"
+./stop_public_tunnel.sh
 ```
 
 Advertencia: el tunel publico expone el dashboard. Usarlo solo para demos controladas y no dejarlo abierto innecesariamente.
@@ -538,7 +532,7 @@ mysql --ssl=0 -h 127.0.0.1 -P 3306 -uroot -proot -e "SHOW DATABASES LIKE 'F1%';"
 Si faltan `F1_silver`, `F1_gold` o `F1_control`, ejecutar:
 
 ```bash
-cd "/home/djfa/Dev/DBs BackUps"
+cd /home/djfa/Dev/f1_gold_streamlit/database/mysql
 ./F1_refresh_layers.sh equipo_2026_05_02
 ```
 
@@ -577,8 +571,9 @@ Windows: revisar la salida de la terminal donde se ejecuto `streamlit run app.py
 ### Reiniciar por completo
 
 ```bash
-"/home/djfa/Dev/DBs BackUps/F1_gold_dashboard_stop.sh"
-"/home/djfa/Dev/DBs BackUps/F1_gold_dashboard.sh"
+cd /home/djfa/Dev/f1_gold_streamlit
+./stop_streamlit.sh
+./run_streamlit.sh
 ```
 
 ## Resumen Para El Equipo
