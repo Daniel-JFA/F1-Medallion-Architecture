@@ -232,7 +232,7 @@ def get_setting(name: str, default: str = "") -> str:
         return default
 
 
-def render_pdf_viewer(pdf_path: Path, height: int = 780) -> None:
+def render_pdf_viewer(pdf_path: Path, height: int = 780, key: str | None = None) -> None:
     if not pdf_path.exists():
         st.warning("No se encontró el archivo de presentación.")
         return
@@ -245,6 +245,7 @@ def render_pdf_viewer(pdf_path: Path, height: int = 780) -> None:
         file_name=pdf_path.name,
         mime="application/pdf",
         width="stretch",
+        key=key,
     )
     st.markdown(
         f"""
@@ -535,6 +536,7 @@ def main() -> None:
             "Carreras Recientes",
             "KPIs Versionados",
             "Arquitectura",
+            "Telemetría",
         ]
     )
 
@@ -1143,7 +1145,12 @@ def main() -> None:
         st.divider()
         st.subheader("Presentación del proyecto")
         st.caption("Material complementario: `F1_Telemetry_Blueprint.pdf`")
-        render_pdf_viewer(PRESENTATION_PDF)
+        render_pdf_viewer(PRESENTATION_PDF, key="pdf_arquitectura")
+
+    with tabs[8]:
+        st.subheader("Blueprint de Telemetría F1")
+        st.caption("Especificación técnica y arquitectura de datos de telemetría")
+        render_pdf_viewer(PRESENTATION_PDF, key="pdf_telemetria")
 
 
 if __name__ == "__main__":
