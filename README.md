@@ -438,6 +438,25 @@ SELECT COUNT(*) AS mart_race_weekend_rows FROM f1_gold.mart_race_weekend;
 
 La capa de snapshots queda incluida en el mismo archivo. El snapshot esperado es `equipo_2026_05_02`.
 
+### Ejecutar Directo Por JDBC
+
+Si quieres ejecutarlo sin abrir el SQL pesado en DBeaver, usa el ejecutor incluido:
+
+```bash
+cd /home/djfa/Dev/f1_gold_streamlit
+read -rsp "Databricks token: " DATABRICKS_TOKEN
+echo
+export DATABRICKS_TOKEN
+python tools/run_databricks_sql.py
+unset DATABRICKS_TOKEN
+```
+
+El script usa por defecto este warehouse:
+
+```text
+jdbc:databricks://dbc-27294608-e1ce.cloud.databricks.com:443/default;transportMode=http;ssl=1;AuthMech=3;httpPath=/sql/1.0/warehouses/14f76675cb754d43;
+```
+
 ## Ejecutar El Dashboard En Linux
 
 Desde la carpeta del dashboard:

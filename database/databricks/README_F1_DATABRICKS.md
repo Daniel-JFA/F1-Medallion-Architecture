@@ -42,6 +42,39 @@ No requiere subir CSV a Databricks.
 
 El archivo anterior `F1_databricks_full_rebuild_inserts.sql` se mantiene por compatibilidad, pero no incluye `f1_control`. Para el equipo, el archivo recomendado es `F1_databricks_one_sql_with_inserts.sql`.
 
+## Opcion Recomendada Desde Terminal
+
+Tambien puedes ejecutarlo directamente contra el warehouse Databricks por JDBC.
+
+La conexion objetivo es:
+
+```text
+jdbc:databricks://dbc-27294608-e1ce.cloud.databricks.com:443/default;transportMode=http;ssl=1;AuthMech=3;httpPath=/sql/1.0/warehouses/14f76675cb754d43;
+```
+
+El token no se guarda en el proyecto. Para ejecutarlo sin dejar el token escrito en archivos:
+
+```bash
+cd /home/djfa/Dev/f1_gold_streamlit
+read -rsp "Databricks token: " DATABRICKS_TOKEN
+echo
+export DATABRICKS_TOKEN
+python tools/run_databricks_sql.py
+unset DATABRICKS_TOKEN
+```
+
+El ejecutor usa:
+
+```text
+tools/run_databricks_sql.py
+```
+
+y ejecuta por defecto:
+
+```text
+database/databricks/F1_databricks_one_sql_with_inserts.sql
+```
+
 Usa estos archivos en este orden:
 
 1. `F1_databricks_schema.sql`
