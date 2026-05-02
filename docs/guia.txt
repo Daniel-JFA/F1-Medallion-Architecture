@@ -1,0 +1,434 @@
+GUIA PARA NOTEBOOKLM
+PRESENTACION DEL PROYECTO F1 CON ARQUITECTURA MEDALLON Y MODELO ESTRELLA
+
+Objetivo del material
+=====================
+
+Genera una presentacion profesional, clara y academica sobre el proyecto de analitica historica de Formula 1.
+
+La presentacion debe explicar:
+
+1. La arquitectura medallon del proyecto.
+2. La funcion de cada capa: f1, f1_silver, f1_gold, f1_gold_star y f1_control.
+3. Por que Gold no debe duplicar Silver.
+4. Por que se creo un esquema separado llamado f1_gold_star.
+5. Como se debe representar visualmente el modelo estrella.
+6. Como el dashboard Streamlit consume la capa Gold.
+7. Que valor de negocio entrega el modelo.
+
+Tono esperado
+=============
+
+Usa un tono profesional, tecnico y claro.
+
+La audiencia puede ser profesor, jurado academico, equipo de datos o personas de negocio con conocimiento basico de bases de datos.
+
+Evita sonar informal.
+Evita sobrecargar las diapositivas.
+Cada diapositiva debe tener poco texto y una explicacion oral sugerida.
+
+Resumen del proyecto
+====================
+
+El proyecto trabaja con datos historicos de Formula 1.
+
+La arquitectura sigue un patron medallon:
+
+f1
+  Capa base con datos historicos cargados en Databricks.
+
+f1_silver
+  Capa curada. Limpia, normaliza y enriquece los datos.
+  Contiene dimensiones y hechos detallados.
+  Incluye reglas analiticas como:
+  - piloto ganador,
+  - podio,
+  - clasificacion,
+  - abandono,
+  - salida desde pole,
+  - puntos de carrera,
+  - puntos sprint,
+  - shared drive.
+
+f1_gold
+  Capa Gold de consumo.
+  Contiene marts de negocio, KPIs y vistas ejecutivas.
+  Es la capa que alimenta el dashboard Streamlit.
+  No debe duplicar Silver ni guardar detalle tecnico innecesario.
+
+f1_gold_star
+  Modelo estrella fisico separado.
+  Se crea para herramientas BI, modelado dimensional y visualizacion clara en DBeaver/Databricks.
+  Se construye desde f1_gold, no desde f1_silver.
+
+f1_control
+  Capa de control.
+  Guarda historicos/versionamiento de snapshots de KPIs.
+
+Mensaje central
+===============
+
+El proyecto no es solo un dashboard.
+Es una arquitectura de datos completa:
+
+datos historicos -> curaduria -> consumo ejecutivo -> modelo dimensional -> control historico.
+
+La decision profesional mas importante es separar f1_gold y f1_gold_star:
+
+- f1_gold conserva los productos de datos listos para consumo.
+- f1_gold_star expone esos productos en forma dimensional para BI.
+
+Esto evita contaminar Gold y evita duplicar Silver.
+
+Estructura sugerida de presentacion
+===================================
+
+Diapositiva 1 - Titulo
+----------------------
+
+Titulo:
+Arquitectura Medallon y Modelo Estrella para Analitica Historica de Formula 1
+
+Subtitulo:
+De datos historicos a KPIs ejecutivos y modelo dimensional en Databricks
+
+Notas del presentador:
+Este proyecto organiza datos historicos de Formula 1 en una arquitectura medallon, construye una capa Gold orientada a negocio y separa un modelo estrella fisico para consumo BI.
+
+
+Diapositiva 2 - Problema y objetivo
+-----------------------------------
+
+Contenido:
+- Datos historicos distribuidos en varias entidades: carreras, pilotos, constructores, circuitos, resultados, clasificacion, pits y standings.
+- Necesidad de convertir datos tecnicos en indicadores de negocio.
+- Objetivo: crear una arquitectura confiable, consultable y presentable.
+
+Notas del presentador:
+El reto no era solo cargar datos, sino convertir un dataset deportivo complejo en una base analitica ordenada, con KPIs y vistas para responder preguntas de negocio.
+
+
+Diapositiva 3 - Arquitectura medallon
+-------------------------------------
+
+Crear un diagrama vertical o horizontal con estas capas:
+
+f1 -> f1_silver -> f1_gold -> f1_gold_star -> f1_control
+
+Explicacion breve:
+
+f1:
+Base historica cargada.
+
+f1_silver:
+Curaduria, limpieza, reglas analiticas y hechos detallados.
+
+f1_gold:
+Marts, KPIs y vistas ejecutivas.
+
+f1_gold_star:
+Modelo estrella fisico para BI.
+
+f1_control:
+Snapshots historicos de KPIs.
+
+Notas del presentador:
+La arquitectura medallon permite separar responsabilidades. Silver resuelve calidad y enriquecimiento. Gold responde preguntas de negocio. Gold Star permite modelado dimensional sin mezclarlo con la capa Gold.
+
+
+Diapositiva 4 - Capa Silver
+---------------------------
+
+Contenido:
+Silver transforma datos tecnicos en una base analitica confiable.
+
+Puntos clave:
+- Normaliza dimensiones y hechos.
+- Enriquece datos con banderas analiticas.
+- Construye el grano detallado de carrera.
+- Controla calidad y casos historicos especiales.
+
+Ejemplos de reglas:
+- is_winner
+- is_podium
+- is_classified_finish
+- started_from_pole
+- shared_drive_candidate
+
+Notas del presentador:
+Silver es la capa donde se concentra la logica tecnica y analitica. Es el lugar correcto para trabajar el detalle, no Gold.
+
+
+Diapositiva 5 - Capa Gold
+-------------------------
+
+Contenido:
+Gold contiene objetos de consumo final:
+
+- mart_driver_season
+- mart_constructor_season
+- mart_circuit_risk
+- mart_qualifying_effect_season
+- mart_race_weekend
+- mart_kpi_snapshot
+- kpi_catalog
+- vistas vw_dashboard_*
+
+Notas del presentador:
+Gold no replica Silver. Gold resume, estructura y publica datos de valor. Esta capa alimenta directamente el dashboard y evita joins complejos en la visualizacion.
+
+
+Diapositiva 6 - Dashboard Streamlit
+-----------------------------------
+
+Contenido:
+El dashboard consume exclusivamente Gold y Control.
+
+Objetos usados:
+- f1_gold.vw_dashboard_kpi_cards
+- f1_gold.kpi_catalog
+- f1_gold.mart_driver_season
+- f1_gold.mart_constructor_season
+- f1_gold.vw_dashboard_top_drivers
+- f1_gold.vw_dashboard_top_constructors
+- f1_gold.vw_dashboard_circuit_risk
+- f1_gold.mart_qualifying_effect_season
+- f1_gold.mart_race_weekend
+- f1_control.f1_gold_kpi_snapshot_history
+
+Notas del presentador:
+Esto demuestra una buena practica: el dashboard no consulta Silver ni la base cruda. Consume una capa Gold ya preparada para presentacion.
+
+
+Diapositiva 7 - Por que crear f1_gold_star
+------------------------------------------
+
+Contenido:
+f1_gold_star se crea separado de f1_gold para tener un modelo dimensional fisico.
+
+Razones:
+- Permite ver claramente dimensiones y hechos.
+- Facilita consumo BI.
+- No contamina la capa Gold.
+- No duplica la capa Silver.
+- Se construye desde marts Gold.
+
+Notas del presentador:
+El modelo estrella no debe ser una copia del detalle Silver. Debe representar objetos de negocio ya curados y agregados desde Gold.
+
+
+Diapositiva 8 - Modelo estrella fisico
+--------------------------------------
+
+Instruccion visual:
+Crear un diagrama de estrella.
+
+Ubicar las dimensiones alrededor y los hechos en el centro o en grupos centrales.
+
+Dimensiones:
+- dim_season
+- dim_driver
+- dim_constructor
+- dim_circuit
+- dim_kpi
+
+Hechos:
+- fact_driver_season
+- fact_constructor_season
+- fact_circuit_risk
+- fact_qualifying_season
+- fact_race_weekend
+- fact_kpi_snapshot
+
+Notas del presentador:
+El modelo estrella permite analizar el rendimiento por temporada, piloto, constructor, circuito, clasificacion, carrera y KPI.
+
+
+Diapositiva 9 - Relaciones del modelo estrella
+----------------------------------------------
+
+Representar estas relaciones:
+
+dim_season 1 a N fact_driver_season
+dim_driver 1 a N fact_driver_season
+dim_constructor 1 a N fact_driver_season
+
+dim_season 1 a N fact_constructor_season
+dim_constructor 1 a N fact_constructor_season
+
+dim_circuit 1 a 1 fact_circuit_risk
+
+dim_season 1 a 1 fact_qualifying_season
+
+dim_season 1 a N fact_race_weekend
+
+dim_kpi 1 a 1 fact_kpi_snapshot
+
+Notas del presentador:
+Las relaciones muestran como se conectan las metricas de negocio con las entidades descriptivas. En local MySQL se pueden manejar con foreign keys. En Databricks se interpretan como modelo dimensional sobre Delta tables.
+
+
+Diapositiva 10 - Tablas y conteos validados
+-------------------------------------------
+
+Mostrar tabla:
+
+dim_season: 75
+dim_driver: 861
+dim_constructor: 211
+dim_circuit: 77
+dim_kpi: 10
+fact_driver_season: 3211
+fact_constructor_season: 1111
+fact_circuit_risk: 77
+fact_qualifying_season: 31
+fact_race_weekend: 1125
+fact_kpi_snapshot: 10
+
+Notas del presentador:
+Los conteos confirman que el modelo estrella fue materializado y validado tanto para exploracion como para consumo.
+
+
+Diapositiva 11 - KPIs y preguntas de negocio
+--------------------------------------------
+
+KPIs principales:
+- Temporadas cubiertas
+- Carreras registradas
+- Pilotos registrados
+- Escuderias registradas
+- Tasa de clasificacion
+- Tasa de no clasificacion
+- Puntos promedio por entrada
+- Conversion pole a victoria
+- Participacion de fines de semana sprint
+- Participaciones con shared drive
+
+Preguntas que responde:
+- Que pilotos dominaron historicamente?
+- Que constructores tuvieron mayor rendimiento?
+- Que circuitos generan mas riesgo?
+- Cuanto influye la clasificacion?
+- Como evolucionan los KPIs?
+
+Notas del presentador:
+El valor del proyecto esta en traducir datos historicos en preguntas claras de negocio y deporte.
+
+
+Diapositiva 12 - Valor profesional del diseno
+---------------------------------------------
+
+Contenido:
+- Separacion por capas.
+- Curaduria en Silver.
+- Consumo en Gold.
+- Modelo estrella separado.
+- Dashboard desacoplado.
+- Snapshots KPI versionados.
+
+Notas del presentador:
+La arquitectura permite escalar, mantener y explicar el proyecto. Cada capa tiene una responsabilidad clara.
+
+
+Diapositiva 13 - Recomendaciones futuras
+----------------------------------------
+
+Contenido:
+- Orquestar el flujo en un Job de Databricks.
+- Agregar pipeline_run_id.
+- Versionar snapshots por entrega.
+- Agregar pruebas automaticas de conteos y calidad.
+- Conectar f1_gold_star a Power BI, Tableau o Databricks SQL Dashboard.
+
+Notas del presentador:
+El proyecto ya tiene una base solida. Los siguientes pasos son gobierno, automatizacion y consumo BI.
+
+
+Diapositiva 14 - Cierre
+-----------------------
+
+Mensaje final:
+El proyecto convierte datos historicos de Formula 1 en una arquitectura analitica gobernada:
+
+Silver limpia y enriquece.
+Gold publica valor.
+Gold Star modela para BI.
+Control versiona KPIs.
+Streamlit comunica resultados.
+
+Notas del presentador:
+La fortaleza principal del ejercicio es que no se queda en visualizacion. Presenta un flujo de datos completo y defendible.
+
+
+Instrucciones para disenar la estrella
+======================================
+
+Crear un diagrama visual con estas reglas:
+
+1. Titulo del diagrama:
+Modelo Estrella f1_gold_star
+
+2. Colocar dimensiones alrededor:
+
+Arriba:
+dim_season
+
+Izquierda:
+dim_driver
+dim_constructor
+
+Derecha:
+dim_circuit
+dim_kpi
+
+Centro:
+fact_driver_season
+fact_constructor_season
+fact_circuit_risk
+fact_qualifying_season
+fact_race_weekend
+fact_kpi_snapshot
+
+3. Dibujar relaciones:
+
+dim_season -> fact_driver_season
+dim_driver -> fact_driver_season
+dim_constructor -> fact_driver_season
+
+dim_season -> fact_constructor_season
+dim_constructor -> fact_constructor_season
+
+dim_circuit -> fact_circuit_risk
+
+dim_season -> fact_qualifying_season
+
+dim_season -> fact_race_weekend
+
+dim_kpi -> fact_kpi_snapshot
+
+4. Usar colores:
+
+Dimensiones:
+azul o verde suave.
+
+Hechos:
+rojo, naranja o dorado.
+
+Capa Gold Star:
+fondo claro.
+
+5. Evitar:
+
+- No incluir tablas Silver en el diagrama estrella.
+- No incluir f1_gold.mart_* dentro del diagrama final, salvo como fuente previa.
+- No mezclar f1_gold y f1_gold_star como si fueran el mismo esquema.
+
+6. Agregar nota debajo del diagrama:
+
+El modelo estrella se construye desde marts Gold, no desde Silver, para respetar la arquitectura medallon y exponer un modelo dimensional limpio para BI.
+
+
+Resumen ejecutivo para usar como voz narrativa
+==============================================
+
+Este proyecto implementa una arquitectura medallon para datos historicos de Formula 1. La capa Silver normaliza y enriquece los datos. La capa Gold transforma ese detalle en marts, KPIs y vistas ejecutivas. Para facilitar el consumo por herramientas BI, se crea un esquema separado llamado f1_gold_star, que materializa un modelo estrella construido desde Gold. Esta separacion evita duplicar Silver, mantiene limpia la capa Gold y permite presentar una arquitectura profesional, gobernada y orientada a consumo analitico.

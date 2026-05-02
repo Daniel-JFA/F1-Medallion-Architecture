@@ -4,6 +4,9 @@
 -- Optional:
 -- USE CATALOG workspace;
 
+CREATE CATALOG IF NOT EXISTS f1;
+USE CATALOG f1;
+
 USE f1;
 
 -- Drop foreign keys first so the script can be rerun safely.

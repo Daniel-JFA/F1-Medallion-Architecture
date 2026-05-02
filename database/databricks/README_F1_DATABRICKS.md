@@ -1,134 +1,44 @@
-# F1 para Databricks
+# Databricks SQL
 
-No ejecutes archivos de MySQL en Databricks.
+Esta carpeta contiene la version canonica del proyecto.
 
-Especialmente, no ejecutes:
+## Archivos Activos
 
-- `sql_exports/F1_full_project_2026_05_02_portable.sql`
-- `F1.sql`
-- `F1_relationships.sql`
-- `database/mysql/*.sql`
+1. `F1_databricks_schema.sql`
+2. `F1_databricks_load.sql`
+3. `F1_databricks_constraints.sql`
+4. `F1_databricks_silver.sql`
+5. `F1_databricks_gold.sql`
+6. `F1_databricks_gold_star.sql`
+7. `F1_databricks_control.sql`
 
-Esos archivos usan sintaxis MySQL/MariaDB, por ejemplo:
+`F1_databricks_hive_metastore.sql` queda como alternativa para workspaces sin Unity Catalog.
 
-```sql
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-```
+## Gold
 
-Databricks SQL/Spark SQL no entiende esa sintaxis y devuelve errores como:
+`F1_databricks_gold.sql` crea:
 
-```text
-[PARSE_SYNTAX_ERROR] Syntax error at or near end of input
-```
+- marts ejecutivos: `mart_*`
+- catalogo y snapshot de KPIs
+- vistas `vw_dashboard_*`
 
-## Opcion Recomendada Desde DBeaver
+## Gold Star
 
-Si estas conectado a Databricks desde DBeaver y quieres cargar todo en una sola ejecucion, sin depender de volumenes externos ni archivos separados, ejecuta este archivo:
+`F1_databricks_gold_star.sql` crea el esquema separado `f1_gold_star` con tablas dimensionales fisicas para BI:
 
-```text
-database/databricks/F1_databricks_one_sql_with_inserts.sql
-```
+- `dim_*`
+- `fact_*`
 
-Ese archivo ya incluye:
+Se alimenta desde `f1_gold`, no desde `f1_silver`.
 
-- creacion de tablas base en `f1`
-- carga de datos con `INSERT`
-- construccion de `f1_silver`
-- construccion de `f1_gold`
-- construccion de `f1_control`
-- consultas de validacion
+## Ejecucion Rapida
 
-No requiere subir CSV a Databricks.
-
-El archivo anterior `F1_databricks_full_rebuild_inserts.sql` se mantiene por compatibilidad, pero no incluye `f1_control`. Para el equipo, el archivo recomendado es `F1_databricks_one_sql_with_inserts.sql`.
-
-## Opcion Recomendada Desde Terminal
-
-Tambien puedes ejecutarlo directamente contra el warehouse Databricks por JDBC.
-
-La conexion objetivo es:
-
-```text
-jdbc:databricks://dbc-27294608-e1ce.cloud.databricks.com:443/default;transportMode=http;ssl=1;AuthMech=3;httpPath=/sql/1.0/warehouses/14f76675cb754d43;
-```
-
-El token no se guarda en el proyecto. Para ejecutarlo sin dejar el token escrito en archivos:
+Si la capa base `f1` ya existe:
 
 ```bash
-cd /home/djfa/Dev/f1_gold_streamlit
-read -rsp "Databricks token: " DATABRICKS_TOKEN
-echo
-export DATABRICKS_TOKEN
+export DATABRICKS_TOKEN='...'
 python tools/run_databricks_sql.py
 unset DATABRICKS_TOKEN
 ```
 
-El ejecutor usa:
-
-```text
-tools/run_databricks_sql.py
-```
-
-y ejecuta por defecto:
-
-```text
-database/databricks/F1_databricks_one_sql_with_inserts.sql
-```
-
-Usa estos archivos en este orden:
-
-1. `F1_databricks_schema.sql`
-2. `F1_databricks_load.sql`
-3. `F1_databricks_constraints.sql` solo si tus tablas viven en Unity Catalog
-4. `F1_databricks_silver.sql`
-5. `F1_databricks_gold.sql`
-6. `F1_databricks_control.sql` opcional si quieres versionar snapshots de KPIs
-
-Ese orden separado requiere que `F1_databricks_load.sql` apunte a una ruta de CSV accesible por Databricks. Si no tienes esa ruta configurada, usa mejor `F1_databricks_one_sql_with_inserts.sql`.
-
-## Flujo recomendado
-
-1. Ejecuta `F1_databricks_schema.sql`.
-2. Sube los CSV de `DB F1` a un volumen de Unity Catalog o a una ubicacion externa accesible desde Databricks.
-3. En `F1_databricks_load.sql`, cambia la ruta `/Volumes/main/default/f1_raw/` por tu ruta real.
-4. Ejecuta `F1_databricks_load.sql`.
-5. Si no usas `hive_metastore`, ejecuta `F1_databricks_constraints.sql`.
-6. Ejecuta `F1_databricks_silver.sql` para construir la capa curada.
-7. Ejecuta `F1_databricks_gold.sql` para materializar marts, KPIs y vistas ejecutivas.
-8. Si quieres historial de KPIs, ejecuta `F1_databricks_control.sql`.
-
-## Archivos fuente esperados
-
-- `circuits.csv`
-- `constructors.csv`
-- `drivers.csv`
-- `seasons.csv`
-- `status.csv`
-- `races.csv`
-- `constructor_results.csv`
-- `constructor_standings.csv`
-- `driver_standings.csv`
-- `results.csv`
-- `sprint_results.csv`
-- `qualifying.csv`
-- `lap_times.csv`
-- `pit_stops.csv`
-
-## Notas
-
-- Las columnas de hora se guardan como `STRING` para evitar incompatibilidades entre MySQL y Databricks.
-- `COPY INTO` ya es idempotente: si vuelves a ejecutar el script de carga, Databricks omite archivos que ya cargo.
-- Las llaves primarias y foraneas en Databricks son informativas y requieren Unity Catalog.
-- `F1_databricks_silver.sql` ya incluye la version ampliada de `Silver` equivalente a la capa local:
-  - `dim_seasons`
-  - `fact_constructor_results`
-  - `fact_race_entries`
-- `F1_databricks_gold.sql` crea la capa de consumo en `f1_gold` con:
-  - `kpi_catalog`
-  - `mart_kpi_snapshot`
-  - `mart_driver_season`
-  - `mart_constructor_season`
-  - `mart_circuit_risk`
-  - `mart_qualifying_effect_season`
-  - `mart_race_weekend`
-  - vistas `vw_dashboard_*`
+Si necesitas cargar desde cero, primero ejecuta `schema`, `load` y opcionalmente `constraints`.

@@ -1,7 +1,10 @@
 -- Databricks-compatible schema for the local F1 dataset.
--- Source: local CSV files in "DB F1" and the MySQL schema used by import_f1.py.
+-- Source: Formula 1 CSV files already staged in a Databricks volume.
 -- Optional for Unity Catalog:
 -- USE CATALOG workspace;
+
+CREATE CATALOG IF NOT EXISTS f1;
+USE CATALOG f1;
 
 CREATE SCHEMA IF NOT EXISTS f1;
 USE f1;

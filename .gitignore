@@ -7,6 +7,16 @@ logs/
 
 .env
 .env.*
+.streamlit/secrets.toml
 
 .DS_Store
 Thumbs.db
+
+# Generated local data/export artifacts. The canonical data lives in Databricks.
+sql_exports/
+database/source_csv/
+database/mysql/
+database/databricks/*_inserts.sql
+database/databricks/F1_databricks_one_sql_with_inserts.sql
+database/databricks/F1_databricks_full_rebuild*.sql
+database/databricks/F1_databricks_all_in_one.sql

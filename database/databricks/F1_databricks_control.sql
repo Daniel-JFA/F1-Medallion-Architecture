@@ -7,6 +7,9 @@
 -- Optional for Unity Catalog:
 -- USE CATALOG workspace;
 
+CREATE CATALOG IF NOT EXISTS f1;
+USE CATALOG f1;
+
 CREATE SCHEMA IF NOT EXISTS f1_control;
 USE f1_control;
 

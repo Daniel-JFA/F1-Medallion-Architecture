@@ -1,77 +1,35 @@
 # Consolidation Manifest
 
-This project now contains the operational F1 dashboard package plus the main database artifacts needed to run, restore, rebuild, document, and share the project without relying on `/home/djfa/Dev/DBs BackUps`.
+El proyecto local quedo reducido a los artefactos necesarios para operar contra Databricks.
 
-## Runtime Dashboard
+## Conservado
 
+- `database/databricks/F1_databricks_schema.sql`
+- `database/databricks/F1_databricks_load.sql`
+- `database/databricks/F1_databricks_constraints.sql`
+- `database/databricks/F1_databricks_silver.sql`
+- `database/databricks/F1_databricks_gold.sql`
+- `database/databricks/F1_databricks_gold_star.sql`
+- `database/databricks/F1_databricks_control.sql`
+- `database/databricks/F1_databricks_hive_metastore.sql`
+- `tools/run_databricks_sql.py`
 - `app.py`
 - `requirements.txt`
 - `.streamlit/config.toml`
-- `run_streamlit.sh`
-- `stop_streamlit.sh`
-- `run_public_tunnel.sh`
-- `stop_public_tunnel.sh`
-
-## Portable Database Dump
-
-- `sql_exports/F1_full_project_2026_05_02_portable.sql`
-- `sql_exports/F1_full_project_2026_05_02_portable.sql.sha256`
-
-This is the recommended path for the team. Restoring this dump creates:
-
-- `F1`
-- `F1_silver`
-- `F1_gold`
-- `F1_control`
-
-## MySQL Pipeline
-
-- `database/mysql/F1_relationships.sql`
-- `database/mysql/F1_mysql_silver.sql`
-- `database/mysql/F1_mysql_gold.sql`
-- `database/mysql/F1_gold_kpi_history.sql`
-- `database/mysql/F1_refresh_layers.sh`
-- `database/mysql/F1_freeze_kpis.sh`
-
-The shell scripts in this folder use paths relative to their own location.
-
-## Source CSV
-
-- `database/source_csv/import_f1.py`
-- `database/source_csv/DB F1/*.csv`
-
-These are the original CSV inputs and the Python loader for rebuilding the relational `F1` database from source files.
-
-## Databricks Artifacts
-
-- `database/databricks/F1_databricks_*.sql`
-- `database/databricks/F1_databricks_run_order.md`
-- `database/databricks/README_F1_DATABRICKS.md`
-- `database/databricks/generate_databricks_insert_dump.py`
-
-## Documentation
-
-- `docs/F1_diccionario_relacional.md`
-- `docs/F1_documentacion_hacia_gold.md`
-- `docs/F1_documentacion_silver_presentacion.md`
-- `docs/F1_documentacion_gold_presentacion.md`
-- `docs/F1_informe_avance.md`
-- `docs/F1_entrega_corregida.md`
-- `docs/F1_entrega_databricks.md`
-- `docs/F1_gold_presentacion.md`
-- `docs/F1_taller_consultas_corregidas.sql`
-
-## Assets
-
+- scripts `run_*` y `stop_*`
 - `assets/F1.png`
 
-## What Can Be Cleaned From `DBs BackUps`
+## Removido Del Repo
 
-After confirming this repository has been pushed and backed up, the F1-specific duplicates in `/home/djfa/Dev/DBs BackUps` can be archived or removed from that folder. Keep unrelated database backups there if they belong to other projects.
+- dumps MySQL portables
+- CSV fuente locales
+- pipeline MySQL local
+- SQL Databricks monoliticos generados con inserts
+- documentacion historica duplicada
+- caches Python, logs y entorno virtual local
 
-Do not delete anything from `DBs BackUps` until the repository has been pushed successfully and another clone has verified:
+## Nota
 
-1. The dump restores correctly.
-2. The dashboard runs.
-3. The MySQL rebuild scripts are present.
-4. The source CSV files are present.
+La fuente de verdad operativa es Databricks. `F1_databricks_gold.sql` contiene los marts ejecutivos, KPIs y vistas de presentacion en `f1_gold`.
+
+`F1_databricks_gold_star.sql` contiene el modelo estrella fisico separado en `f1_gold_star`.

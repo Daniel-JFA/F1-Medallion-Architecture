@@ -7,6 +7,9 @@
 -- Optional for Unity Catalog:
 -- USE CATALOG workspace;
 
+CREATE CATALOG IF NOT EXISTS f1;
+USE CATALOG f1;
+
 CREATE SCHEMA IF NOT EXISTS f1_gold;
 USE f1_gold;
 
@@ -618,6 +621,29 @@ SELECT
     CAST(ROUND(SUM(CASE WHEN shared_drive_candidate THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS DECIMAL(18,2)),
     CONCAT(CAST(ROUND(SUM(CASE WHEN shared_drive_candidate THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS STRING), '%')
 FROM f1_silver.fact_race_entries;
+
+-- ============================================================
+-- Cleanup deprecated Gold star views
+-- ============================================================
+
+DROP VIEW IF EXISTS f1_gold.star_fact_kpi_snapshot;
+DROP VIEW IF EXISTS f1_gold.star_fact_race_weekend;
+DROP VIEW IF EXISTS f1_gold.star_fact_qualifying_season;
+DROP VIEW IF EXISTS f1_gold.star_fact_circuit_risk;
+DROP VIEW IF EXISTS f1_gold.star_fact_constructor_season;
+DROP VIEW IF EXISTS f1_gold.star_fact_driver_season;
+DROP VIEW IF EXISTS f1_gold.star_dim_kpi;
+DROP VIEW IF EXISTS f1_gold.star_dim_circuit;
+DROP VIEW IF EXISTS f1_gold.star_dim_constructor;
+DROP VIEW IF EXISTS f1_gold.star_dim_driver;
+DROP VIEW IF EXISTS f1_gold.star_dim_season;
+DROP TABLE IF EXISTS f1_gold.fact_race_entry;
+DROP TABLE IF EXISTS f1_gold.dim_status;
+DROP TABLE IF EXISTS f1_gold.dim_race;
+DROP TABLE IF EXISTS f1_gold.dim_driver;
+DROP TABLE IF EXISTS f1_gold.dim_constructor;
+DROP TABLE IF EXISTS f1_gold.dim_circuit;
+DROP TABLE IF EXISTS f1_gold.dim_season;
 
 -- ============================================================
 -- Executive views

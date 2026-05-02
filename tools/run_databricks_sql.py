@@ -21,10 +21,11 @@ DEFAULT_JDBC_URL = (
     "httpPath=/sql/1.0/warehouses/14f76675cb754d43;"
 )
 
-DEFAULT_SQL_FILE = (
-    Path(__file__).resolve().parents[1]
-    / "database/databricks/F1_databricks_one_sql_with_inserts.sql"
-)
+DEFAULT_SQL_FILES = [
+    Path(__file__).resolve().parents[1] / "database/databricks/F1_databricks_silver.sql",
+    Path(__file__).resolve().parents[1] / "database/databricks/F1_databricks_gold.sql",
+    Path(__file__).resolve().parents[1] / "database/databricks/F1_databricks_control.sql",
+]
 
 DRIVER_CANDIDATES = [
     Path.home()
@@ -127,10 +128,18 @@ def main() -> int:
         print("Ejemplo: export DATABRICKS_TOKEN='dapi...'", file=sys.stderr)
         return 2
 
+    catalog = os.getenv("DATABRICKS_CATALOG", "f1").strip()
     jdbc_url = os.getenv("DATABRICKS_JDBC_URL", DEFAULT_JDBC_URL)
-    sql_file = Path(os.getenv("DATABRICKS_SQL_FILE", str(DEFAULT_SQL_FILE))).resolve()
-    driver = Path(os.getenv("DATABRICKS_JDBC_DRIVER", ""))
-    if not driver:
+    
+    sql_files_env = os.getenv("DATABRICKS_SQL_FILE")
+    if sql_files_env:
+        sql_files = [Path(f.strip()).resolve() for f in sql_files_env.split(",")]
+    else:
+        sql_files = [f.resolve() for f in DEFAULT_SQL_FILES]
+
+    driver_env = os.getenv("DATABRICKS_JDBC_DRIVER", "").strip()
+    driver = Path(driver_env).expanduser() if driver_env else Path()
+    if not driver_env:
         driver = next((p for p in DRIVER_CANDIDATES if p.exists()), Path())
 
     if not driver.exists():
@@ -138,13 +147,20 @@ def main() -> int:
         print("Define DATABRICKS_JDBC_DRIVER=/ruta/databricks-jdbc.jar", file=sys.stderr)
         return 2
 
-    if not sql_file.exists():
-        print(f"ERROR: no existe el SQL: {sql_file}", file=sys.stderr)
-        return 2
+    for f in sql_files:
+        if not f.exists():
+            print(f"ERROR: no existe el SQL: {f}", file=sys.stderr)
+            return 2
 
-    statements = split_sql(sql_file.read_text(encoding="utf-8"))
-    print(f"SQL file: {sql_file}")
-    print(f"Statements: {len(statements)}")
+    statements = [
+        f"CREATE CATALOG IF NOT EXISTS {catalog};",
+        f"USE CATALOG {catalog};",
+    ]
+    for f in sql_files:
+        statements.extend(split_sql(f.read_text(encoding="utf-8")))
+
+    print(f"SQL files to execute: {[f.name for f in sql_files]}")
+    print(f"Total statements: {len(statements)}")
     print(f"Driver: {driver}")
 
     java_source = r"""
@@ -153,6 +169,21 @@ import java.nio.file.*;
 import java.util.*;
 
 public class RunDatabricksSql {
+    private static void printProgress(int current, int total, String preview) {
+        int width = 24;
+        int filled = (int) Math.round((double) current * width / total);
+        StringBuilder bar = new StringBuilder();
+        for (int i = 0; i < width; i++) {
+            bar.append(i < filled ? '=' : ' ');
+        }
+        String line = String.format("\r[%s] %3d%% (%d/%d) %s", bar, Math.round(current * 100.0 / total), current, total, preview);
+        System.out.print(line);
+        System.out.flush();
+        if (current == total) {
+            System.out.println();
+        }
+    }
+
   public static void main(String[] args) throws Exception {
     String jdbcUrl = args[0];
     String statementsPath = args[1];
@@ -164,6 +195,7 @@ public class RunDatabricksSql {
     Properties props = new Properties();
     props.setProperty("UID", "token");
     props.setProperty("PWD", token);
+        int skipped = 0;
     try (Connection conn = DriverManager.getConnection(jdbcUrl, props);
          Statement stmt = conn.createStatement()) {
       int i = 0;
@@ -172,9 +204,28 @@ public class RunDatabricksSql {
         i++;
         String preview = sql.replaceAll("\\s+", " ").trim();
         if (preview.length() > 100) preview = preview.substring(0, 100) + "...";
-        System.out.println("[" + i + "/" + statements.size() + "] " + preview);
-        stmt.execute(sql);
+                if (i == 1 || i == statements.size() || i % 25 == 0) {
+                    printProgress(i, statements.size(), preview);
+                }
+                try {
+                    stmt.execute(sql);
+                } catch (SQLException exc) {
+                    String message = String.valueOf(exc.getMessage());
+                    boolean alreadyExists = message.contains("PRIMARY KEY constraint")
+                            || message.contains("UNIQUE CONSTRAINT")
+                            || message.contains("RESOURCE_ALREADY_EXISTS");
+                    boolean isConstraintStatement = sql.regionMatches(true, 0, "ALTER TABLE", 0, "ALTER TABLE".length())
+                            && sql.toUpperCase(Locale.ROOT).contains("ADD CONSTRAINT");
+                    if (alreadyExists && isConstraintStatement) {
+                        skipped++;
+                        continue;
+                    }
+                    throw exc;
+                }
       }
+            if (skipped > 0) {
+                System.out.println("Skipped already-existing constraints: " + skipped);
+            }
     }
   }
 }

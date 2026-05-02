@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import os
-from urllib.parse import quote_plus
 
+from databricks import sql as databricks_sql
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-from sqlalchemy import create_engine, text
 
 
 st.set_page_config(
@@ -217,28 +216,36 @@ CUSTOM_CSS = """
 """
 
 
-def build_connection_url(
-    host: str,
-    port: int,
-    user: str,
-    password: str,
-    database: str,
-) -> str:
-    encoded_user = quote_plus(user)
-    encoded_password = quote_plus(password)
-    return f"mysql+pymysql://{encoded_user}:{encoded_password}@{host}:{port}/{database}"
-
-
-@st.cache_resource(show_spinner=False)
-def get_engine(url: str):
-    return create_engine(url, pool_pre_ping=True)
+def get_setting(name: str, default: str = "") -> str:
+    """Read config from environment first, then Streamlit secrets."""
+    value = os.getenv(name)
+    if value:
+        return value
+    try:
+        return str(st.secrets.get(name, default))
+    except Exception:
+        return default
 
 
 @st.cache_data(ttl=300, show_spinner=False)
-def run_query(url: str, sql: str) -> pd.DataFrame:
-    engine = get_engine(url)
-    with engine.connect() as conn:
-        return pd.read_sql(text(sql), conn)
+def run_query(
+    server_hostname: str,
+    http_path: str,
+    access_token: str,
+    catalog: str,
+    query: str,
+) -> pd.DataFrame:
+    with databricks_sql.connect(
+        server_hostname=server_hostname,
+        http_path=http_path,
+        access_token=access_token,
+    ) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(f"USE CATALOG `{catalog.replace('`', '``')}`")
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            columns = [column[0] for column in cursor.description]
+    return pd.DataFrame(rows, columns=columns)
 
 
 def render_metric_cards(kpis: pd.DataFrame) -> None:
@@ -282,93 +289,91 @@ def translate_columns(df: pd.DataFrame, columns: list[str] | None = None) -> pd.
     return view.rename(columns=labels)
 
 
-def load_all_data(gold_url: str, control_url: str) -> dict[str, pd.DataFrame]:
+def load_all_data(
+    server_hostname: str,
+    http_path: str,
+    access_token: str,
+    catalog: str,
+) -> dict[str, pd.DataFrame]:
+    def query(sql: str) -> pd.DataFrame:
+        return run_query(server_hostname, http_path, access_token, catalog, sql)
+
     return {
-        "kpis": run_query(
-            gold_url,
+        "kpis": query(
             """
             SELECT kpi_code, kpi_name, business_question, unit_of_measure,
                    kpi_value_numeric, kpi_value_text
-            FROM vw_dashboard_kpi_cards
+            FROM f1_gold.vw_dashboard_kpi_cards
             """,
         ),
-        "catalog": run_query(
-            gold_url,
+        "catalog": query(
             """
             SELECT kpi_code, kpi_name, business_definition, formula_definition,
                    unit_of_measure, grain_level, source_objects
-            FROM kpi_catalog
+            FROM f1_gold.kpi_catalog
             ORDER BY kpi_name
             """,
         ),
-        "driver_championships": run_query(
-            gold_url,
+        "driver_championships": query(
             """
             SELECT *
-            FROM mart_driver_season
+            FROM f1_gold.mart_driver_season
             WHERE championship_position IS NOT NULL
             ORDER BY season_year DESC, championship_position ASC, total_points DESC
             """,
         ),
-        "constructor_championships": run_query(
-            gold_url,
+        "constructor_championships": query(
             """
             SELECT *
-            FROM mart_constructor_season
+            FROM f1_gold.mart_constructor_season
             WHERE championship_position IS NOT NULL
             ORDER BY season_year DESC, championship_position ASC, total_points DESC
             """,
         ),
-        "top_drivers": run_query(
-            gold_url,
+        "top_drivers": query(
             """
             SELECT *
-            FROM vw_dashboard_top_drivers
+            FROM f1_gold.vw_dashboard_top_drivers
             ORDER BY titles DESC, wins DESC, total_points DESC
             LIMIT 25
             """,
         ),
-        "top_constructors": run_query(
-            gold_url,
+        "top_constructors": query(
             """
             SELECT *
-            FROM vw_dashboard_top_constructors
+            FROM f1_gold.vw_dashboard_top_constructors
             ORDER BY titles DESC, wins DESC, total_points DESC
             LIMIT 20
             """,
         ),
-        "circuit_risk": run_query(
-            gold_url,
+        "circuit_risk": query(
             """
             SELECT *
-            FROM vw_dashboard_circuit_risk
+            FROM f1_gold.vw_dashboard_circuit_risk
             ORDER BY non_classified_rate_pct DESC, total_entries DESC
             LIMIT 25
             """,
         ),
-        "qualifying": run_query(
-            gold_url,
+        "qualifying": query(
             """
             SELECT *
-            FROM mart_qualifying_effect_season
+            FROM f1_gold.mart_qualifying_effect_season
             ORDER BY season_year
             """,
         ),
-        "weekends": run_query(
-            gold_url,
+        "weekends": query(
             """
             SELECT *
-            FROM mart_race_weekend
+            FROM f1_gold.mart_race_weekend
             ORDER BY race_date DESC, raceId DESC
             LIMIT 30
             """,
         ),
-        "snapshots": run_query(
-            control_url,
+        "snapshots": query(
             """
             SELECT snapshot_label, source_schema, snapshot_taken_at, kpi_code,
                    kpi_name, unit_of_measure, kpi_value_numeric, kpi_value_text
-            FROM f1_gold_kpi_snapshot_history
+            FROM f1_control.f1_gold_kpi_snapshot_history
             ORDER BY snapshot_taken_at ASC, kpi_code ASC
             """,
         ),
@@ -380,27 +385,30 @@ def main() -> None:
 
     with st.sidebar:
         st.title("Conexión")
-        host = st.text_input("Host", value=os.getenv("MYSQL_HOST", "127.0.0.1"))
-        port = st.number_input(
-            "Puerto",
-            min_value=1,
-            max_value=65535,
-            value=int(os.getenv("MYSQL_PORT", "3306")),
+        server_hostname = st.text_input(
+            "Server hostname",
+            value=get_setting("DATABRICKS_SERVER_HOSTNAME", "dbc-27294608-e1ce.cloud.databricks.com"),
         )
-        user = st.text_input("Usuario", value=os.getenv("MYSQL_USER", "root"))
-        password = st.text_input(
-            "Contraseña",
-            value=os.getenv("MYSQL_PASSWORD", "root"),
+        http_path = st.text_input(
+            "HTTP path",
+            value=get_setting("DATABRICKS_HTTP_PATH", "/sql/1.0/warehouses/14f76675cb754d43"),
+        )
+        catalog = st.text_input(
+            "Catálogo",
+            value=get_setting("DATABRICKS_CATALOG", "f1"),
+        )
+        access_token = st.text_input(
+            "Token",
+            value=get_setting("DATABRICKS_TOKEN", ""),
             type="password",
         )
 
         if st.button("Recargar datos", width="stretch"):
             st.cache_data.clear()
-            st.cache_resource.clear()
 
         st.markdown("---")
         st.caption("Flujo analítico del proyecto")
-        st.code("Bronze -> F1 -> F1_silver -> F1_gold -> F1_control")
+        st.code("Databricks f1 -> f1_silver -> f1_gold -> f1_control")
 
         st.caption("Fuentes principales de la app")
         st.markdown(
@@ -415,13 +423,14 @@ def main() -> None:
             "- `F1_control.f1_gold_kpi_snapshot_history`"
         )
 
-    gold_url = build_connection_url(host, int(port), user, password, "F1_gold")
-    control_url = build_connection_url(host, int(port), user, password, "F1_control")
+    if not access_token:
+        st.warning("Configura un token de Databricks para cargar el dashboard.")
+        st.stop()
 
     try:
-        data = load_all_data(gold_url, control_url)
+        data = load_all_data(server_hostname, http_path, access_token, catalog)
     except Exception as exc:
-        st.error("No fue posible cargar la capa Gold desde MySQL.")
+        st.error("No fue posible cargar la capa Gold desde Databricks.")
         st.code(str(exc))
         st.stop()
 
@@ -1010,7 +1019,7 @@ def main() -> None:
 
     with tabs[7]:
         st.subheader("Arquitectura y recorrido hacia Gold")
-        st.code("CSV Bronze -> F1 relacional -> F1_silver -> F1_gold -> F1_control")
+        st.code("Databricks f1 -> f1_silver -> f1_gold -> f1_control")
         st.markdown(
             """
             La app existe para contar una historia técnica con lenguaje de negocio.
@@ -1022,12 +1031,12 @@ def main() -> None:
         with arch_1:
             st.markdown(
                 """
-                **Bronze y F1 relacional**
+                **Base y Silver**
 
-                - Los datos nacen en archivos CSV históricos de Formula 1.
-                - Luego se cargan a `F1`, donde se formalizan relaciones entre pilotos, carreras,
+                - Los datos historicos de Formula 1 ya estan cargados en Databricks.
+                - El esquema `f1` conserva la estructura base de carreras, pilotos,
                   circuitos, estados, resultados y standings.
-                - Esta base conserva la trazabilidad fuente y la estructura transaccional.
+                - `f1_silver` limpia y enriquece esa base para consumo analitico.
                 """
             )
             st.markdown(

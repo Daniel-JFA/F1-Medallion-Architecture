@@ -25,6 +25,9 @@
 -- Optional for Unity Catalog:
 -- USE CATALOG workspace;
 
+CREATE CATALOG IF NOT EXISTS f1;
+USE CATALOG f1;
+
 USE f1;
 
 COPY INTO circuits
