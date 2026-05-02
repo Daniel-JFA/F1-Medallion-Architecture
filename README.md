@@ -227,6 +227,8 @@ python -m pip install -r requirements.txt
 
 ## Restaurar El Dump Compartible
 
+Esta seccion es solo para MySQL o MariaDB. No ejecutes este dump en Databricks.
+
 El dump completo ya existe en:
 
 ```text
@@ -239,6 +241,24 @@ Ese archivo contiene las cuatro bases:
 - `F1_silver`
 - `F1_gold`
 - `F1_control`
+
+Advertencia importante:
+
+```text
+sql_exports/F1_full_project_2026_05_02_portable.sql
+```
+
+es un dump de MySQL/MariaDB. Si se ejecuta en Databricks, fallara con errores de parser como:
+
+```text
+[PARSE_SYNTAX_ERROR] Syntax error at or near end of input
+```
+
+Para Databricks usa:
+
+```text
+database/databricks/F1_databricks_full_rebuild_inserts.sql
+```
 
 ### Restaurar En Linux
 
@@ -366,6 +386,59 @@ El dump recomendado para compartir ahora es la version portable incluida dentro 
 
 ```text
 sql_exports/F1_full_project_2026_05_02_portable.sql
+```
+
+## Ejecutar En Databricks
+
+Databricks no usa sintaxis MySQL. Por eso no debes ejecutar el dump de `sql_exports` ni los scripts de `database/mysql` en una conexion Databricks.
+
+### Archivo Correcto Para DBeaver + Databricks
+
+Usa este archivo:
+
+```text
+database/databricks/F1_databricks_full_rebuild_inserts.sql
+```
+
+Ese archivo es compatible con Databricks SQL y ya incluye:
+
+- creacion del esquema `f1`
+- carga de datos con `INSERT`
+- construccion de `f1_silver`
+- construccion de `f1_gold`
+- consultas de validacion
+
+### Archivo Que No Debes Ejecutar En Databricks
+
+No uses este archivo en Databricks:
+
+```text
+sql_exports/F1_full_project_2026_05_02_portable.sql
+```
+
+Ese archivo es solo para MySQL/MariaDB y contiene instrucciones como:
+
+```sql
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+```
+
+Spark SQL no entiende esas instrucciones.
+
+### Validacion En Databricks
+
+Despues de ejecutar `F1_databricks_full_rebuild_inserts.sql`, valida:
+
+```sql
+SELECT * FROM f1_gold.vw_dashboard_kpi_cards;
+SELECT COUNT(*) AS mart_driver_season_rows FROM f1_gold.mart_driver_season;
+SELECT COUNT(*) AS mart_constructor_season_rows FROM f1_gold.mart_constructor_season;
+SELECT COUNT(*) AS mart_race_weekend_rows FROM f1_gold.mart_race_weekend;
+```
+
+Si quieres la capa de snapshots despues de Gold, ejecuta:
+
+```text
+database/databricks/F1_databricks_control.sql
 ```
 
 ## Ejecutar El Dashboard En Linux

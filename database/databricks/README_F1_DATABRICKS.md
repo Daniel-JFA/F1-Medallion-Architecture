@@ -1,6 +1,43 @@
 # F1 para Databricks
 
-No ejecutes `F1.sql` ni `F1_relationships.sql` en Databricks. Esos archivos usan sintaxis MySQL.
+No ejecutes archivos de MySQL en Databricks.
+
+Especialmente, no ejecutes:
+
+- `sql_exports/F1_full_project_2026_05_02_portable.sql`
+- `F1.sql`
+- `F1_relationships.sql`
+- `database/mysql/*.sql`
+
+Esos archivos usan sintaxis MySQL/MariaDB, por ejemplo:
+
+```sql
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+```
+
+Databricks SQL/Spark SQL no entiende esa sintaxis y devuelve errores como:
+
+```text
+[PARSE_SYNTAX_ERROR] Syntax error at or near end of input
+```
+
+## Opcion Recomendada Desde DBeaver
+
+Si estas conectado a Databricks desde DBeaver y quieres cargar todo sin depender de volumenes externos, ejecuta este archivo:
+
+```text
+database/databricks/F1_databricks_full_rebuild_inserts.sql
+```
+
+Ese archivo ya incluye:
+
+- creacion de tablas base en `f1`
+- carga de datos con `INSERT`
+- construccion de `f1_silver`
+- construccion de `f1_gold`
+- consultas de validacion
+
+No requiere subir CSV a Databricks.
 
 Usa estos archivos en este orden:
 
@@ -10,6 +47,8 @@ Usa estos archivos en este orden:
 4. `F1_databricks_silver.sql`
 5. `F1_databricks_gold.sql`
 6. `F1_databricks_control.sql` opcional si quieres versionar snapshots de KPIs
+
+Ese orden separado requiere que `F1_databricks_load.sql` apunte a una ruta de CSV accesible por Databricks. Si no tienes esa ruta configurada, usa mejor `F1_databricks_full_rebuild_inserts.sql`.
 
 ## Flujo recomendado
 
