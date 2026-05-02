@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import base64
 import os
+from pathlib import Path
 
 from databricks import sql as databricks_sql
 import pandas as pd
@@ -35,6 +37,9 @@ COLOR_SEQUENCE = [
     "#003049",
     "#669bbc",
 ]
+
+BASE_DIR = Path(__file__).resolve().parent
+PRESENTATION_PDF = BASE_DIR / "assets" / "F1_Telemetry_Blueprint.pdf"
 
 COLUMN_LABELS = {
     "season_year": "Temporada",
@@ -225,6 +230,33 @@ def get_setting(name: str, default: str = "") -> str:
         return str(st.secrets.get(name, default))
     except Exception:
         return default
+
+
+def render_pdf_viewer(pdf_path: Path, height: int = 780) -> None:
+    if not pdf_path.exists():
+        st.warning("No se encontró el archivo de presentación.")
+        return
+
+    pdf_bytes = pdf_path.read_bytes()
+    encoded_pdf = base64.b64encode(pdf_bytes).decode("ascii")
+    st.download_button(
+        "Descargar presentación PDF",
+        data=pdf_bytes,
+        file_name=pdf_path.name,
+        mime="application/pdf",
+        width="stretch",
+    )
+    st.markdown(
+        f"""
+        <iframe
+            src="data:application/pdf;base64,{encoded_pdf}"
+            width="100%"
+            height="{height}"
+            style="border: 1px solid rgba(0, 48, 73, 0.18); border-radius: 8px;"
+        ></iframe>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 @st.cache_data(ttl=300, show_spinner=False)
@@ -1107,6 +1139,11 @@ def main() -> None:
             }
         )
         st.dataframe(gold_objects, width="stretch", hide_index=True)
+
+        st.divider()
+        st.subheader("Presentación del proyecto")
+        st.caption("Material complementario: `F1_Telemetry_Blueprint.pdf`")
+        render_pdf_viewer(PRESENTATION_PDF)
 
 
 if __name__ == "__main__":
