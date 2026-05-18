@@ -638,26 +638,26 @@ def build_circuit_card(circuit: pd.Series) -> str:
         download_attr = ""
         svg_href = "#"
 
-    return f"""
-    <div class="circuit-card">
-        <div class="circuit-card-image">{svg_image}</div>
-        <div class="circuit-card-body">
-            <div class="circuit-card-kicker">GP de {country or "F1"}</div>
-            <div class="circuit-card-title">{name}</div>
-            <div class="circuit-card-city">{location or "Ubicación no disponible"}</div>
-            <div class="circuit-card-stats">
-                <div>Pole a victoria<strong>{format_pct(circuit["pole_to_win_rate_pct"])}</strong></div>
-                <div>No clasificación<strong>{format_pct(circuit["non_classified_rate_pct"])}</strong></div>
-                <div>Entradas<strong>{format_int(circuit["total_entries"])}</strong></div>
-                <div>Grandes premios<strong>{format_int(circuit["race_weekends_hosted"])}</strong></div>
-            </div>
-            <div class="circuit-card-actions">
-                <a class="circuit-card-action primary" href="{circuit_url}" target="_blank" rel="noreferrer">Abrir</a>
-                <a class="circuit-card-action secondary" href="{svg_href}" {download_attr}>SVG</a>
-            </div>
-        </div>
-    </div>
-    """
+    return (
+        '<div class="circuit-card">'
+        f'<div class="circuit-card-image">{svg_image}</div>'
+        '<div class="circuit-card-body">'
+        f'<div class="circuit-card-kicker">GP de {country or "F1"}</div>'
+        f'<div class="circuit-card-title">{name}</div>'
+        f'<div class="circuit-card-city">{location or "Ubicación no disponible"}</div>'
+        '<div class="circuit-card-stats">'
+        f'<div>Pole a victoria<strong>{format_pct(circuit["pole_to_win_rate_pct"])}</strong></div>'
+        f'<div>No clasificación<strong>{format_pct(circuit["non_classified_rate_pct"])}</strong></div>'
+        f'<div>Entradas<strong>{format_int(circuit["total_entries"])}</strong></div>'
+        f'<div>Grandes premios<strong>{format_int(circuit["race_weekends_hosted"])}</strong></div>'
+        '</div>'
+        '<div class="circuit-card-actions">'
+        f'<a class="circuit-card-action primary" href="{circuit_url}" target="_blank" rel="noreferrer">Abrir</a>'
+        f'<a class="circuit-card-action secondary" href="{svg_href}" {download_attr}>SVG</a>'
+        '</div>'
+        '</div>'
+        '</div>'
+    )
 
 
 def translate_columns(df: pd.DataFrame, columns: list[str] | None = None) -> pd.DataFrame:
@@ -1300,13 +1300,12 @@ def main() -> None:
         if selected_circuit_data.empty:
             st.info("Selecciona al menos un circuito para ver sus tarjetas.")
         else:
-            cards_html = "\n".join(
-                build_circuit_card(circuit) for _, circuit in selected_circuit_data.iterrows()
-            )
-            st.markdown(
-                f'<div class="circuit-card-gallery">{cards_html}</div>',
-                unsafe_allow_html=True,
-            )
+            selected_rows = list(selected_circuit_data.iterrows())
+            for start_index in range(0, len(selected_rows), 3):
+                card_columns = st.columns(3)
+                for column, (_, circuit) in zip(card_columns, selected_rows[start_index : start_index + 3]):
+                    with column:
+                        st.markdown(build_circuit_card(circuit), unsafe_allow_html=True)
         st.caption("Trazados SVG: `julesr0y/f1-circuits-svg` (CC BY 4.0).")
 
         st.dataframe(translate_columns(circuit_risk), width="stretch", hide_index=True)
