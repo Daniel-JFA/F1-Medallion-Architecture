@@ -238,15 +238,22 @@ def render_pdf_viewer(pdf_path: Path, height: int = 780, key: str | None = None)
         return
 
     pdf_bytes = pdf_path.read_bytes()
-    encoded_pdf = base64.b64encode(pdf_bytes).decode("ascii")
     st.download_button(
         "Descargar presentación PDF",
         data=pdf_bytes,
         file_name=pdf_path.name,
         mime="application/pdf",
         width="stretch",
-        key=key,
+        key=f"{key}_download" if key else None,
     )
+
+    try:
+        st.pdf(pdf_bytes, height=height, key=f"{key}_viewer" if key else None)
+        return
+    except Exception:
+        pass
+
+    encoded_pdf = base64.b64encode(pdf_bytes).decode("ascii")
     st.markdown(
         f"""
         <iframe
