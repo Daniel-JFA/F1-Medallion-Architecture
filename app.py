@@ -226,35 +226,35 @@ CUSTOM_CSS = """
         border-radius: 22px;
         box-shadow: 0 18px 30px rgba(0, 0, 0, 0.22);
         overflow: hidden;
-        min-height: 440px;
+        min-height: 390px;
         display: flex;
         flex-direction: column;
     }
 
     .circuit-card-gallery {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 1.25rem;
         margin: 1rem 0 1.4rem;
     }
 
     .circuit-card-image {
         background: #f7f7f7;
-        height: 250px;
+        height: 210px;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 1rem;
+        padding: 0.85rem;
     }
 
     .circuit-card-image img {
         width: 100%;
-        height: 210px;
+        height: 175px;
         object-fit: contain;
     }
 
     .circuit-card-body {
-        padding: 1.15rem 1.15rem 1.2rem;
+        padding: 1rem;
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -262,16 +262,16 @@ CUSTOM_CSS = """
 
     .circuit-card-kicker {
         color: #ff9f9f;
-        font-size: 0.78rem;
+        font-size: 0.72rem;
         font-weight: 900;
         letter-spacing: 0.18em;
         text-transform: uppercase;
-        margin-bottom: 0.65rem;
+        margin-bottom: 0.55rem;
     }
 
     .circuit-card-title {
         color: #ffffff;
-        font-size: 1.25rem;
+        font-size: 1.08rem;
         font-weight: 900;
         line-height: 1.12;
         margin-bottom: 0.45rem;
@@ -279,8 +279,8 @@ CUSTOM_CSS = """
 
     .circuit-card-city {
         color: #b8b8b8;
-        font-size: 0.92rem;
-        margin-bottom: 0.9rem;
+        font-size: 0.84rem;
+        margin-bottom: 0.8rem;
     }
 
     .circuit-card-stats {
@@ -288,14 +288,14 @@ CUSTOM_CSS = """
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 0.45rem;
-        font-size: 0.82rem;
-        margin-bottom: 1rem;
+        font-size: 0.76rem;
+        margin-bottom: 0.9rem;
     }
 
     .circuit-card-stats strong {
         color: #ffffff;
         display: block;
-        font-size: 1rem;
+        font-size: 0.9rem;
     }
 
     .circuit-card-actions {
@@ -308,12 +308,12 @@ CUSTOM_CSS = """
         align-items: center;
         border-radius: 999px;
         display: inline-flex;
-        font-size: 0.9rem;
+        font-size: 0.82rem;
         font-weight: 800;
         gap: 0.4rem;
         justify-content: center;
-        min-height: 38px;
-        padding: 0 1rem;
+        min-height: 34px;
+        padding: 0 0.8rem;
         text-decoration: none !important;
         width: 50%;
     }
@@ -327,6 +327,18 @@ CUSTOM_CSS = """
         background: transparent;
         border: 1px solid rgba(255, 255, 255, 0.16);
         color: #ffffff !important;
+    }
+
+    @media (max-width: 1100px) {
+        .circuit-card-gallery {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 720px) {
+        .circuit-card-gallery {
+            grid-template-columns: 1fr;
+        }
     }
 
     [data-testid="stSidebar"] {
@@ -1270,18 +1282,31 @@ def main() -> None:
             st.plotly_chart(style_plot(cause_fig), width="stretch")
 
         st.subheader("Tarjetas de circuitos")
-        st.caption("Galería visual de pistas con trazados SVG y métricas clave.")
-        selected_circuit_data = circuit_risk.sort_values(
+        st.caption("Selecciona pistas y se muestran como tarjetas compactas, hasta tres por fila.")
+        circuit_options = circuit_risk.sort_values(
             ["non_classified_rate_pct", "total_entries"],
             ascending=[False, False],
-        ).head(8)
-        cards_html = "\n".join(
-            build_circuit_card(circuit) for _, circuit in selected_circuit_data.iterrows()
+        )["circuit_name"].dropna().tolist()
+        selected_circuits = st.multiselect(
+            "Circuitos a mostrar",
+            options=circuit_options,
+            default=circuit_options[:6],
+            max_selections=9,
+            help="Puedes seleccionar hasta nueve circuitos; en escritorio se organizan tres por fila.",
         )
-        st.markdown(
-            f'<div class="circuit-card-gallery">{cards_html}</div>',
-            unsafe_allow_html=True,
-        )
+        selected_circuit_data = circuit_risk[
+            circuit_risk["circuit_name"].isin(selected_circuits)
+        ].sort_values(["non_classified_rate_pct", "total_entries"], ascending=[False, False])
+        if selected_circuit_data.empty:
+            st.info("Selecciona al menos un circuito para ver sus tarjetas.")
+        else:
+            cards_html = "\n".join(
+                build_circuit_card(circuit) for _, circuit in selected_circuit_data.iterrows()
+            )
+            st.markdown(
+                f'<div class="circuit-card-gallery">{cards_html}</div>',
+                unsafe_allow_html=True,
+            )
         st.caption("Trazados SVG: `julesr0y/f1-circuits-svg` (CC BY 4.0).")
 
         st.dataframe(translate_columns(circuit_risk), width="stretch", hide_index=True)
