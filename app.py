@@ -1103,64 +1103,94 @@ def main() -> None:
 
         impact_cols = st.columns(3)
         with impact_cols[0]:
-            st.metric("Conversión de Pole a Victoria", pole_to_win_value)
+            st.metric(
+                "Conversión de Pole a Victoria",
+                pole_to_win_value,
+                help="Fuente: `F1_gold.vw_dashboard_kpi_cards`.",
+            )
         with impact_cols[1]:
             st.metric(
                 "Clasificación desde Pole",
                 f"{pole_classified_rate:.2f}%" if pole_classified_rate is not None else "N/D",
+                help="Fuente: `F1_silver.fact_race_entries`, filtrando participantes que clasificaron en pole.",
             )
         with impact_cols[2]:
             st.metric(
                 "Abandono desde Pole",
                 f"{pole_non_classified_rate:.2f}%" if pole_non_classified_rate is not None else "N/D",
+                help="Fuente: `F1_silver.fact_race_entries`, calculado como no clasificación desde la primera posición.",
             )
-
-        st.caption(
-            "Conversión tomada de `F1_gold.vw_dashboard_kpi_cards`; supervivencia desde pole calculada sobre `F1_silver.fact_race_entries`."
-        )
 
         story_left, story_right = st.columns([3, 2])
         with story_left:
-            decade_trend = qualifying.dropna(subset=["pole_to_win_rate_pct"]).copy()
-            if not decade_trend.empty:
-                decade_trend["decade_start"] = (decade_trend["season_year"] // 10) * 10
-                decade_trend["decade"] = decade_trend["decade_start"].astype(int).astype(str) + "s"
-                decade_summary = (
-                    decade_trend.groupby(["decade_start", "decade"], as_index=False)
-                    .agg(
-                        pole_to_win_rate_pct=("pole_to_win_rate_pct", "mean"),
-                        race_weekends=("race_weekends", "sum"),
-                        winners_from_pole=("winners_from_pole", "sum"),
-                    )
-                    .sort_values("decade_start")
+            yearly_trend = qualifying.copy()
+            yearly_trend["season_year"] = pd.to_numeric(yearly_trend["season_year"], errors="coerce")
+            yearly_trend["pole_to_win_rate_pct"] = pd.to_numeric(
+                yearly_trend["pole_to_win_rate_pct"],
+                errors="coerce",
+            )
+            yearly_trend = yearly_trend.dropna(
+                subset=["season_year", "pole_to_win_rate_pct"]
+            ).sort_values("season_year")
+            if not yearly_trend.empty:
+                yearly_trend["season_year"] = yearly_trend["season_year"].astype(int)
+                yearly_trend["rolling_5y_pole_to_win_rate_pct"] = (
+                    yearly_trend["pole_to_win_rate_pct"]
+                    .rolling(window=5, min_periods=2)
+                    .mean()
                 )
 
-                decade_fig = px.line(
-                    decade_summary,
-                    x="decade",
-                    y="pole_to_win_rate_pct",
+                trend_long = yearly_trend.melt(
+                    id_vars=["season_year", "race_weekends", "winners_from_pole"],
+                    value_vars=[
+                        "pole_to_win_rate_pct",
+                        "rolling_5y_pole_to_win_rate_pct",
+                    ],
+                    var_name="metric",
+                    value_name="value",
+                ).dropna(subset=["value"])
+                trend_long["metric"] = trend_long["metric"].map(
+                    {
+                        "pole_to_win_rate_pct": "Conversión anual",
+                        "rolling_5y_pole_to_win_rate_pct": "Media móvil 5 años",
+                    }
+                )
+
+                trend_fig = px.line(
+                    trend_long,
+                    x="season_year",
+                    y="value",
+                    color="metric",
                     markers=True,
                     labels=COLUMN_LABELS,
-                    color_discrete_sequence=["#c1121f"],
-                    title="Evolución por década: ¿la Pole pesa más con el tiempo?",
+                    color_discrete_map={
+                        "Conversión anual": "#669bbc",
+                        "Media móvil 5 años": "#c1121f",
+                    },
+                    title="Evolución anual: conversión de Pole a Victoria",
                     hover_data={
-                        "decade_start": False,
                         "race_weekends": True,
                         "winners_from_pole": True,
-                        "pole_to_win_rate_pct": ":.2f",
+                        "value": ":.2f",
                     },
                 )
-                st.plotly_chart(style_plot(decade_fig), width="stretch")
+                trend_fig.update_yaxes(range=[0, 60], ticksuffix="%")
+                trend_fig.update_layout(yaxis_title="Conversión Pole a Victoria (%)")
+                st.plotly_chart(style_plot(trend_fig), width="stretch")
 
-                best_decade = decade_summary.sort_values("pole_to_win_rate_pct", ascending=False).iloc[0]
-                worst_decade = decade_summary.sort_values("pole_to_win_rate_pct", ascending=True).iloc[0]
+                best_year = yearly_trend.sort_values("pole_to_win_rate_pct", ascending=False).iloc[0]
+                strongest_window = yearly_trend.dropna(
+                    subset=["rolling_5y_pole_to_win_rate_pct"]
+                ).sort_values("rolling_5y_pole_to_win_rate_pct", ascending=False).iloc[0]
                 st.caption(
-                    f"Punto de lectura: la década con mayor conversión fue {best_decade['decade']} "
-                    f"({best_decade['pole_to_win_rate_pct']:.2f}%), mientras que el punto más bajo "
-                    f"fue {worst_decade['decade']} ({worst_decade['pole_to_win_rate_pct']:.2f}%)."
+                    f"Punto de lectura: el pico anual fue {int(best_year['season_year'])} "
+                    f"({best_year['pole_to_win_rate_pct']:.2f}%). "
+                    f"La media móvil de 5 años alcanza su punto más alto alrededor de "
+                    f"{int(strongest_window['season_year'])} "
+                    f"({strongest_window['rolling_5y_pole_to_win_rate_pct']:.2f}%)."
                 )
             else:
-                st.warning("No hay datos suficientes para construir la evolución por década.")
+                st.warning("No hay datos suficientes para construir la evolución anual.")
 
         with story_right:
             st.markdown(
@@ -1215,12 +1245,36 @@ def main() -> None:
                 return "Patrón histórico"
 
             story_risk["story_segment"] = story_risk.apply(classify_circuit, axis=1)
+            label_candidates = story_risk[
+                story_risk["story_segment"].isin(
+                    [
+                        "Pole protege en alto riesgo",
+                        "Riesgo supera la pole",
+                        "Control desde la pole",
+                    ]
+                )
+            ].copy()
+            label_candidates["label_score"] = (
+                label_candidates["non_classified_rate_pct"].rank(ascending=False)
+                + label_candidates["pole_to_win_rate_pct"].rank(ascending=False)
+            )
+            label_names = set(
+                label_candidates.sort_values("label_score", ascending=False)
+                .head(8)["circuit_name"]
+                .tolist()
+            )
+            story_risk["circuit_label"] = story_risk["circuit_name"].where(
+                story_risk["circuit_name"].isin(label_names),
+                "",
+            )
+
             circuit_story_fig = px.scatter(
                 story_risk,
                 x="non_classified_rate_pct",
                 y="pole_to_win_rate_pct",
                 size="total_entries",
                 color="story_segment",
+                text="circuit_label",
                 hover_name="circuit_name",
                 hover_data={
                     "country": True,
@@ -1239,6 +1293,11 @@ def main() -> None:
                 },
                 title="Circuitos: supervivencia histórica vs valor de la Pole",
             )
+            circuit_story_fig.update_traces(
+                textposition="top center",
+                textfont=dict(size=11),
+                marker=dict(line=dict(width=0.7, color="white")),
+            )
             st.plotly_chart(style_plot(circuit_story_fig), width="stretch")
             st.caption(
                 "Eje X: tasa histórica de abandonos/no clasificación del circuito. "
@@ -1247,7 +1306,7 @@ def main() -> None:
         else:
             st.warning("No hay datos suficientes para cruzar riesgo de circuito y conversión de pole.")
 
-        st.success(
+        st.info(
             "Conclusión: la clasificación influye mucho, pero no actúa sola. "
             "La Pole Position es una ventaja estratégica cuando el circuito permite control; "
             "en trazados con alto riesgo histórico, la confiabilidad y la supervivencia pueden pesar tanto como la velocidad del sábado."
