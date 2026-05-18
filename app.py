@@ -1379,6 +1379,86 @@ def main() -> None:
             "La Pole Position es una ventaja estratégica cuando el circuito permite control; "
             "en trazados con alto riesgo histórico, la confiabilidad y la supervivencia pueden pesar tanto como la velocidad del sábado."
         )
+        with st.expander("Trazabilidad técnica: consultas y cálculos del slide"):
+            st.markdown(
+                """
+                Esta vista consume principalmente objetos ya procesados de la arquitectura Medallón.
+                La lectura ejecutiva se apoya en la capa `f1_gold`, mientras que la métrica de
+                supervivencia desde Pole se calcula puntualmente desde `f1_silver.fact_race_entries`.
+                """
+            )
+            st.markdown("**1. KPI principal: conversión Pole a Victoria**")
+            st.code(
+                """
+SELECT
+    kpi_code,
+    kpi_name,
+    kpi_value_numeric,
+    kpi_value_text
+FROM f1_gold.vw_dashboard_kpi_cards
+WHERE kpi_code = 'pole_to_win_rate_pct';
+                """.strip(),
+                language="sql",
+            )
+            st.markdown("**2. Supervivencia desde Pole**")
+            st.code(
+                """
+SELECT
+    COUNT(*) AS pole_entries,
+    SUM(CASE WHEN is_classified_finish THEN 1 ELSE 0 END) AS pole_classified_entries,
+    COUNT(*) - SUM(CASE WHEN is_classified_finish THEN 1 ELSE 0 END) AS pole_non_classified_entries,
+    ROUND(SUM(CASE WHEN is_classified_finish THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2)
+        AS pole_classified_rate_pct,
+    ROUND((COUNT(*) - SUM(CASE WHEN is_classified_finish THEN 1 ELSE 0 END)) * 100.0 / COUNT(*), 2)
+        AS pole_non_classified_rate_pct
+FROM f1_silver.fact_race_entries
+WHERE qualified_on_pole = true;
+                """.strip(),
+                language="sql",
+            )
+            st.markdown("**3. Evolución anual y media móvil de 5 años**")
+            st.code(
+                """
+SELECT *
+FROM f1_gold.mart_qualifying_effect_season
+ORDER BY season_year;
+                """.strip(),
+                language="sql",
+            )
+            st.code(
+                """
+yearly_trend["rolling_5y_pole_to_win_rate_pct"] = (
+    yearly_trend["pole_to_win_rate_pct"]
+    .rolling(window=5, min_periods=2)
+    .mean()
+)
+                """.strip(),
+                language="python",
+            )
+            st.markdown("**4. Riesgo por circuito: barras y scatter**")
+            st.code(
+                """
+SELECT *
+FROM f1_gold.vw_dashboard_circuit_risk
+ORDER BY non_classified_rate_pct DESC, total_entries DESC;
+                """.strip(),
+                language="sql",
+            )
+            st.markdown(
+                """
+                Las barras toman los cinco circuitos con mayor conversión de Pole a Victoria
+                y los cinco con menor conversión. El scatter clasifica anomalías usando percentiles:
+                `P75` de riesgo, `P75` de conversión desde Pole y `P25` de conversión desde Pole.
+                """
+            )
+            st.code(
+                """
+risk_threshold = story_risk["non_classified_rate_pct"].quantile(0.75)
+pole_threshold = story_risk["pole_to_win_rate_pct"].quantile(0.75)
+low_pole_threshold = story_risk["pole_to_win_rate_pct"].quantile(0.25)
+                """.strip(),
+                language="python",
+            )
 
     with tabs[6]:
         st.subheader("Carreras recientes y lectura narrativa")
