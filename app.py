@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import html
 import os
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from databricks import sql as databricks_sql
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import streamlit.components.v1 as components
 
 
 st.set_page_config(
@@ -217,6 +219,29 @@ CUSTOM_CSS = """
         color: #003049;
     }
 
+    .circuit-card {
+        background: #ffffff;
+        border: 1px solid rgba(0, 48, 73, 0.12);
+        border-left: 5px solid #669bbc;
+        border-radius: 14px;
+        padding: 0.9rem 1rem;
+        margin-bottom: 0.65rem;
+        box-shadow: 0 8px 20px rgba(16, 47, 61, 0.07);
+    }
+
+    .circuit-card-title {
+        color: #003049;
+        font-size: 1.05rem;
+        font-weight: 800;
+        margin-bottom: 0.2rem;
+    }
+
+    .circuit-card-subtitle {
+        color: #5f4b32;
+        font-size: 0.9rem;
+        line-height: 1.35;
+    }
+
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #f8f4ea 0%, #fffdf8 100%);
     }
@@ -408,6 +433,35 @@ def style_plot(fig):
     return fig
 
 
+def render_circuit_map(lat: float | None, lng: float | None, circuit_name: str) -> None:
+    if lat is None or lng is None or pd.isna(lat) or pd.isna(lng):
+        st.info("Este circuito no tiene coordenadas disponibles para el mapa.")
+        return
+
+    lat = float(lat)
+    lng = float(lng)
+    delta = 0.055
+    title = html.escape(circuit_name)
+    map_url = (
+        "https://www.openstreetmap.org/export/embed.html"
+        f"?bbox={lng - delta}%2C{lat - delta}%2C{lng + delta}%2C{lat + delta}"
+        f"&layer=mapnik&marker={lat}%2C{lng}"
+    )
+    components.html(
+        f"""
+        <iframe
+            title="Mapa de {title}"
+            src="{map_url}"
+            width="100%"
+            height="245"
+            style="border: 1px solid rgba(0, 48, 73, 0.16); border-radius: 10px;"
+            loading="lazy">
+        </iframe>
+        """,
+        height=260,
+    )
+
+
 def translate_columns(df: pd.DataFrame, columns: list[str] | None = None) -> pd.DataFrame:
     view = df.copy()
     if columns is not None:
@@ -499,9 +553,16 @@ def load_all_data(
         ),
         "circuit_risk": query(
             """
-            SELECT *
-            FROM f1_gold.vw_dashboard_circuit_risk
-            ORDER BY non_classified_rate_pct DESC, total_entries DESC
+            SELECT
+                cr.*,
+                dc.location,
+                dc.lat,
+                dc.lng,
+                dc.url
+            FROM f1_gold.vw_dashboard_circuit_risk cr
+            LEFT JOIN f1_silver.dim_circuits dc
+                ON cr.circuitId = dc.circuitId
+            ORDER BY cr.non_classified_rate_pct DESC, cr.total_entries DESC
             """,
         ),
         "qualifying": query(
@@ -598,6 +659,20 @@ def main() -> None:
     top_drivers = data["top_drivers"]
     top_constructors = data["top_constructors"]
     circuit_risk = data["circuit_risk"]
+    for column in [
+        "race_weekends_hosted",
+        "total_entries",
+        "non_classified_entries",
+        "non_classified_rate_pct",
+        "mechanical_non_classified_entries",
+        "accident_non_classified_entries",
+        "disqualified_entries",
+        "pole_to_win_rate_pct",
+        "lat",
+        "lng",
+    ]:
+        if column in circuit_risk.columns:
+            circuit_risk[column] = pd.to_numeric(circuit_risk[column], errors="coerce")
     qualifying = data["qualifying"]
     pole_survival = data["pole_survival"]
     weekends = data["weekends"]
@@ -1006,6 +1081,82 @@ def main() -> None:
                 title="Mecánicos vs incidentes por circuito",
             )
             st.plotly_chart(style_plot(cause_fig), width="stretch")
+
+        st.subheader("Tarjetas de circuitos")
+        st.caption("Selecciona pistas para abrir su mapa y los indicadores más relevantes.")
+        circuit_options = circuit_risk.sort_values(
+            ["non_classified_rate_pct", "total_entries"],
+            ascending=[False, False],
+        )["circuit_name"].dropna().tolist()
+        selected_circuits = st.multiselect(
+            "Circuitos a explorar",
+            options=circuit_options,
+            default=circuit_options[:4],
+            max_selections=8,
+            help="Por rendimiento se muestran hasta ocho tarjetas a la vez.",
+        )
+
+        selected_circuit_data = circuit_risk[
+            circuit_risk["circuit_name"].isin(selected_circuits)
+        ].sort_values("non_classified_rate_pct", ascending=False)
+        for _, circuit in selected_circuit_data.iterrows():
+            location_parts = [
+                str(circuit.get("location", "") or "").strip(),
+                str(circuit.get("country", "") or "").strip(),
+            ]
+            location_label = ", ".join(part for part in location_parts if part)
+            with st.expander(f"{circuit['circuit_name']} - {location_label}", expanded=False):
+                st.markdown(
+                    f"""
+                    <div class="circuit-card">
+                        <div class="circuit-card-title">{html.escape(str(circuit["circuit_name"]))}</div>
+                        <div class="circuit-card-subtitle">
+                            {html.escape(location_label or "Ubicación no disponible")} ·
+                            Histórico desde {int(circuit["race_weekends_hosted"]) if pd.notna(circuit["race_weekends_hosted"]) else "N/D"} grandes premios registrados
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                map_col, info_col = st.columns([3, 2])
+                with map_col:
+                    render_circuit_map(
+                        circuit.get("lat"),
+                        circuit.get("lng"),
+                        str(circuit["circuit_name"]),
+                    )
+                with info_col:
+                    metric_cols = st.columns(2)
+                    with metric_cols[0]:
+                        st.metric(
+                            "No clasificación",
+                            f"{float(circuit['non_classified_rate_pct']):.2f}%"
+                            if pd.notna(circuit["non_classified_rate_pct"])
+                            else "N/D",
+                        )
+                    with metric_cols[1]:
+                        st.metric(
+                            "Pole a victoria",
+                            f"{float(circuit['pole_to_win_rate_pct']):.2f}%"
+                            if pd.notna(circuit["pole_to_win_rate_pct"])
+                            else "N/D",
+                        )
+                    st.metric(
+                        "Participaciones históricas",
+                        f"{int(circuit['total_entries']):,}".replace(",", ".")
+                        if pd.notna(circuit["total_entries"])
+                        else "N/D",
+                    )
+                    st.markdown(
+                        f"""
+                        - Abandonos mecánicos: **{int(circuit["mechanical_non_classified_entries"]) if pd.notna(circuit["mechanical_non_classified_entries"]) else "N/D"}**
+                        - Incidentes/accidentes: **{int(circuit["accident_non_classified_entries"]) if pd.notna(circuit["accident_non_classified_entries"]) else "N/D"}**
+                        - Descalificaciones: **{int(circuit["disqualified_entries"]) if pd.notna(circuit["disqualified_entries"]) else "N/D"}**
+                        """
+                    )
+                    circuit_url = str(circuit.get("url", "") or "").strip()
+                    if circuit_url:
+                        st.link_button("Abrir referencia del circuito", circuit_url, width="stretch")
 
         st.dataframe(translate_columns(circuit_risk), width="stretch", hide_index=True)
 
