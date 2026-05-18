@@ -283,13 +283,47 @@ def render_pdf_viewer(pdf_path: Path, height: int = 780, key: str | None = None)
         st.warning("El PDF no contiene páginas para mostrar.")
         return
 
-    page_number = st.slider(
-        "Página",
-        min_value=1,
-        max_value=len(pages),
-        value=1,
-        key=f"{key}_page" if key else None,
-    )
+    page_state_key = f"{key}_page_number" if key else "pdf_page_number"
+    if page_state_key not in st.session_state:
+        st.session_state[page_state_key] = 1
+
+    current_page = min(max(int(st.session_state[page_state_key]), 1), len(pages))
+    st.session_state[page_state_key] = current_page
+
+    prev_col, page_col, count_col, next_col = st.columns([1, 2, 1, 1])
+    with prev_col:
+        if st.button(
+            "Anterior",
+            disabled=current_page <= 1,
+            key=f"{key}_prev" if key else None,
+            width="stretch",
+        ):
+            st.session_state[page_state_key] = max(current_page - 1, 1)
+            st.rerun()
+    with page_col:
+        selected_page = st.selectbox(
+            "Página",
+            options=list(range(1, len(pages) + 1)),
+            index=current_page - 1,
+            format_func=lambda page: f"Página {page}",
+            key=f"{key}_select" if key else None,
+        )
+        if selected_page != current_page:
+            st.session_state[page_state_key] = selected_page
+            st.rerun()
+    with count_col:
+        st.metric("Total", f"{current_page}/{len(pages)}")
+    with next_col:
+        if st.button(
+            "Siguiente",
+            disabled=current_page >= len(pages),
+            key=f"{key}_next" if key else None,
+            width="stretch",
+        ):
+            st.session_state[page_state_key] = min(current_page + 1, len(pages))
+            st.rerun()
+
+    page_number = int(st.session_state[page_state_key])
     st.image(
         pages[page_number - 1],
         caption=f"{pdf_path.name} - página {page_number} de {len(pages)}",
