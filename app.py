@@ -1165,7 +1165,7 @@ def main() -> None:
                         "value": ":.2f",
                     },
                 )
-                trend_fig.update_yaxes(range=[0, 60], ticksuffix="%")
+                trend_fig.update_yaxes(autorange=True, ticksuffix="%")
                 trend_fig.update_layout(yaxis_title="Conversión Pole a Victoria (%)")
                 st.plotly_chart(style_plot(trend_fig), width="stretch")
 
