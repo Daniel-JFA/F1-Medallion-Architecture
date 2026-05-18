@@ -246,6 +246,24 @@ def render_pdf_pages_as_png(pdf_bytes: bytes, dpi: int = 150) -> list[bytes]:
     return pages
 
 
+def clamp_pdf_page(page: int, total_pages: int) -> int:
+    return min(max(page, 1), total_pages)
+
+
+def set_pdf_page(page_state_key: str, page_select_key: str, total_pages: int, delta: int) -> None:
+    current_page = int(st.session_state.get(page_state_key, 1))
+    next_page = clamp_pdf_page(current_page + delta, total_pages)
+    st.session_state[page_state_key] = next_page
+    st.session_state[page_select_key] = next_page
+
+
+def sync_pdf_page_selector(page_state_key: str, page_select_key: str, total_pages: int) -> None:
+    selected_page = int(st.session_state.get(page_select_key, 1))
+    next_page = clamp_pdf_page(selected_page, total_pages)
+    st.session_state[page_state_key] = next_page
+    st.session_state[page_select_key] = next_page
+
+
 def render_pdf_viewer(pdf_path: Path, height: int = 780, key: str | None = None) -> None:
     if not pdf_path.exists():
         st.warning("No se encontró el archivo de presentación.")
@@ -284,44 +302,46 @@ def render_pdf_viewer(pdf_path: Path, height: int = 780, key: str | None = None)
         return
 
     page_state_key = f"{key}_page_number" if key else "pdf_page_number"
+    page_select_key = f"{key}_page_select" if key else "pdf_page_select"
     if page_state_key not in st.session_state:
         st.session_state[page_state_key] = 1
 
     current_page = min(max(int(st.session_state[page_state_key]), 1), len(pages))
     st.session_state[page_state_key] = current_page
+    if page_select_key not in st.session_state:
+        st.session_state[page_select_key] = current_page
 
     prev_col, page_col, count_col, next_col = st.columns([1, 2, 1, 1])
     with prev_col:
-        if st.button(
+        st.button(
             "Anterior",
             disabled=current_page <= 1,
             key=f"{key}_prev" if key else None,
             width="stretch",
-        ):
-            st.session_state[page_state_key] = max(current_page - 1, 1)
-            st.rerun()
+            on_click=set_pdf_page,
+            args=(page_state_key, page_select_key, len(pages), -1),
+        )
     with page_col:
-        selected_page = st.selectbox(
+        st.selectbox(
             "Página",
             options=list(range(1, len(pages) + 1)),
             index=current_page - 1,
             format_func=lambda page: f"Página {page}",
-            key=f"{key}_select" if key else None,
+            key=page_select_key,
+            on_change=sync_pdf_page_selector,
+            args=(page_state_key, page_select_key, len(pages)),
         )
-        if selected_page != current_page:
-            st.session_state[page_state_key] = selected_page
-            st.rerun()
     with count_col:
         st.metric("Total", f"{current_page}/{len(pages)}")
     with next_col:
-        if st.button(
+        st.button(
             "Siguiente",
             disabled=current_page >= len(pages),
             key=f"{key}_next" if key else None,
             width="stretch",
-        ):
-            st.session_state[page_state_key] = min(current_page + 1, len(pages))
-            st.rerun()
+            on_click=set_pdf_page,
+            args=(page_state_key, page_select_key, len(pages), 1),
+        )
 
     page_number = int(st.session_state[page_state_key])
     st.image(
