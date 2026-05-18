@@ -620,6 +620,36 @@ def build_circuit_card(circuit: pd.Series) -> str:
     )
 
 
+def render_circuit_cards(circuit_risk: pd.DataFrame, key_prefix: str = "summary") -> None:
+    st.subheader("Pistas destacadas")
+    st.caption("Selecciona pistas y se muestran como tarjetas compactas, hasta tres por fila.")
+    circuit_options = circuit_risk.sort_values(
+        ["non_classified_rate_pct", "total_entries"],
+        ascending=[False, False],
+    )["circuit_name"].dropna().tolist()
+    selected_circuits = st.multiselect(
+        "Circuitos a mostrar",
+        options=circuit_options,
+        default=circuit_options[:6],
+        max_selections=9,
+        help="Puedes seleccionar hasta nueve circuitos; en escritorio se organizan tres por fila.",
+        key=f"{key_prefix}_selected_circuits",
+    )
+    selected_circuit_data = circuit_risk[
+        circuit_risk["circuit_name"].isin(selected_circuits)
+    ].sort_values(["non_classified_rate_pct", "total_entries"], ascending=[False, False])
+    if selected_circuit_data.empty:
+        st.info("Selecciona al menos un circuito para ver sus tarjetas.")
+    else:
+        selected_rows = list(selected_circuit_data.iterrows())
+        for start_index in range(0, len(selected_rows), 3):
+            card_columns = st.columns(3)
+            for column, (_, circuit) in zip(card_columns, selected_rows[start_index : start_index + 3]):
+                with column:
+                    st.markdown(build_circuit_card(circuit), unsafe_allow_html=True)
+    st.caption("Trazados SVG: `julesr0y/f1-circuits-svg` (CC BY 4.0).")
+
+
 def translate_columns(df: pd.DataFrame, columns: list[str] | None = None) -> pd.DataFrame:
     view = df.copy()
     if columns is not None:
@@ -904,6 +934,7 @@ def main() -> None:
         st.subheader("KPIs oficiales de la capa Gold")
         st.caption("Fuente: `F1_gold.vw_dashboard_kpi_cards` + `F1_gold.kpi_catalog`")
         render_metric_cards(kpis)
+        render_circuit_cards(circuit_risk, key_prefix="executive")
 
         with st.expander("Cómo leer estos KPI"):
             st.markdown(
@@ -1240,33 +1271,6 @@ def main() -> None:
                 title="Mecánicos vs incidentes por circuito",
             )
             st.plotly_chart(style_plot(cause_fig), width="stretch")
-
-        st.subheader("Tarjetas de circuitos")
-        st.caption("Selecciona pistas y se muestran como tarjetas compactas, hasta tres por fila.")
-        circuit_options = circuit_risk.sort_values(
-            ["non_classified_rate_pct", "total_entries"],
-            ascending=[False, False],
-        )["circuit_name"].dropna().tolist()
-        selected_circuits = st.multiselect(
-            "Circuitos a mostrar",
-            options=circuit_options,
-            default=circuit_options[:6],
-            max_selections=9,
-            help="Puedes seleccionar hasta nueve circuitos; en escritorio se organizan tres por fila.",
-        )
-        selected_circuit_data = circuit_risk[
-            circuit_risk["circuit_name"].isin(selected_circuits)
-        ].sort_values(["non_classified_rate_pct", "total_entries"], ascending=[False, False])
-        if selected_circuit_data.empty:
-            st.info("Selecciona al menos un circuito para ver sus tarjetas.")
-        else:
-            selected_rows = list(selected_circuit_data.iterrows())
-            for start_index in range(0, len(selected_rows), 3):
-                card_columns = st.columns(3)
-                for column, (_, circuit) in zip(card_columns, selected_rows[start_index : start_index + 3]):
-                    with column:
-                        st.markdown(build_circuit_card(circuit), unsafe_allow_html=True)
-        st.caption("Trazados SVG: `julesr0y/f1-circuits-svg` (CC BY 4.0).")
 
         st.dataframe(translate_columns(circuit_risk), width="stretch", hide_index=True)
 
