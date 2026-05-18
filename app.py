@@ -546,27 +546,19 @@ def load_all_data(
 
 def main() -> None:
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+    server_hostname = get_setting(
+        "DATABRICKS_SERVER_HOSTNAME",
+        "dbc-27294608-e1ce.cloud.databricks.com",
+    )
+    http_path = get_setting(
+        "DATABRICKS_HTTP_PATH",
+        "/sql/1.0/warehouses/14f76675cb754d43",
+    )
+    catalog = get_setting("DATABRICKS_CATALOG", "f1")
+    access_token = get_setting("DATABRICKS_TOKEN", "")
 
     with st.sidebar:
-        st.title("Conexión")
-        server_hostname = st.text_input(
-            "Server hostname",
-            value=get_setting("DATABRICKS_SERVER_HOSTNAME", "dbc-27294608-e1ce.cloud.databricks.com"),
-        )
-        http_path = st.text_input(
-            "HTTP path",
-            value=get_setting("DATABRICKS_HTTP_PATH", "/sql/1.0/warehouses/14f76675cb754d43"),
-        )
-        catalog = st.text_input(
-            "Catálogo",
-            value=get_setting("DATABRICKS_CATALOG", "f1"),
-        )
-        access_token = st.text_input(
-            "Token",
-            value=get_setting("DATABRICKS_TOKEN", ""),
-            type="password",
-        )
-
+        st.title("F1 Gold")
         if st.button("Recargar datos", width="stretch"):
             st.cache_data.clear()
 
