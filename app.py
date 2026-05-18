@@ -298,37 +298,6 @@ CUSTOM_CSS = """
         font-size: 0.9rem;
     }
 
-    .circuit-card-actions {
-        display: flex;
-        gap: 0.75rem;
-        margin-top: auto;
-    }
-
-    .circuit-card-action {
-        align-items: center;
-        border-radius: 999px;
-        display: inline-flex;
-        font-size: 0.82rem;
-        font-weight: 800;
-        gap: 0.4rem;
-        justify-content: center;
-        min-height: 34px;
-        padding: 0 0.8rem;
-        text-decoration: none !important;
-        width: 50%;
-    }
-
-    .circuit-card-action.primary {
-        background: #ffffff;
-        color: #101010 !important;
-    }
-
-    .circuit-card-action.secondary {
-        background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.16);
-        color: #ffffff !important;
-    }
-
     @media (max-width: 1100px) {
         .circuit-card-gallery {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -622,7 +591,6 @@ def build_circuit_card(circuit: pd.Series) -> str:
     country = html.escape(str(circuit.get("country", "") or "").strip())
     name = html.escape(str(circuit["circuit_name"]))
     svg_path, _ = find_circuit_svg(circuit)
-    circuit_url = html.escape(str(circuit.get("url", "") or "#").strip() or "#")
 
     if svg_path:
         svg_bytes = svg_path.read_bytes()
@@ -631,12 +599,8 @@ def build_circuit_card(circuit: pd.Series) -> str:
             f'<img src="data:image/svg+xml;base64,{svg_base64}" '
             f'alt="Trazado de {name}">'
         )
-        download_attr = f'download="{html.escape(svg_path.name)}"'
-        svg_href = f"data:image/svg+xml;base64,{svg_base64}"
     else:
         svg_image = '<span style="color:#555;font-weight:700;">Sin SVG disponible</span>'
-        download_attr = ""
-        svg_href = "#"
 
     return (
         '<div class="circuit-card">'
@@ -650,10 +614,6 @@ def build_circuit_card(circuit: pd.Series) -> str:
         f'<div>No clasificación<strong>{format_pct(circuit["non_classified_rate_pct"])}</strong></div>'
         f'<div>Entradas<strong>{format_int(circuit["total_entries"])}</strong></div>'
         f'<div>Grandes premios<strong>{format_int(circuit["race_weekends_hosted"])}</strong></div>'
-        '</div>'
-        '<div class="circuit-card-actions">'
-        f'<a class="circuit-card-action primary" href="{circuit_url}" target="_blank" rel="noreferrer">Abrir</a>'
-        f'<a class="circuit-card-action secondary" href="{svg_href}" {download_attr}>SVG</a>'
         '</div>'
         '</div>'
         '</div>'
