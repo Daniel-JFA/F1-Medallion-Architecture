@@ -271,9 +271,10 @@ CUSTOM_CSS = """
         justify-content: center;
     }
 
-    .circuit-svg-frame svg {
+    .circuit-svg-image {
         max-width: 100%;
         height: 280px;
+        object-fit: contain;
     }
 
     .circuit-kpi-panel {
@@ -323,7 +324,7 @@ CUSTOM_CSS = """
             grid-template-columns: 1fr;
         }
 
-        .circuit-svg-frame svg {
+        .circuit-svg-image {
             height: 220px;
         }
     }
@@ -1249,12 +1250,19 @@ def main() -> None:
             location_label = ", ".join(part for part in location_parts if part)
             svg_path, svg_metadata = find_circuit_svg(circuit)
             if svg_path:
-                svg_markup = svg_path.read_text(encoding="utf-8")
+                svg_bytes = svg_path.read_bytes()
+                svg_base64 = base64.b64encode(svg_bytes).decode("ascii")
+                svg_markup = (
+                    '<img class="circuit-svg-image" '
+                    f'src="data:image/svg+xml;base64,{svg_base64}" '
+                    f'alt="Trazado de {html.escape(str(circuit["circuit_name"]))}">'
+                )
                 svg_source = (
                     f"Layout SVG: {html.escape(str(svg_metadata['layoutId']))} · "
                     "Fuente: julesr0y/f1-circuits-svg (CC BY 4.0)."
                 ) if svg_metadata else "Fuente: julesr0y/f1-circuits-svg (CC BY 4.0)."
             else:
+                svg_bytes = b""
                 svg_markup = "<div>No se encontró un trazado SVG para este circuito.</div>"
                 svg_source = "Sin trazado SVG disponible para este circuito."
 
@@ -1307,15 +1315,14 @@ def main() -> None:
             action_cols = st.columns([1, 1, 3])
             if svg_path:
                 with action_cols[0]:
-                    with svg_path.open("rb") as svg_file:
-                        st.download_button(
-                            "Descargar SVG",
-                            data=svg_file.read(),
-                            file_name=svg_path.name,
-                            mime="image/svg+xml",
-                            key=f"download_svg_{int(circuit['circuitId'])}",
-                            width="stretch",
-                        )
+                    st.download_button(
+                        "Descargar SVG",
+                        data=svg_bytes,
+                        file_name=svg_path.name,
+                        mime="image/svg+xml",
+                        key=f"download_svg_{int(circuit['circuitId'])}",
+                        width="stretch",
+                    )
             if circuit_url:
                 with action_cols[1 if svg_path else 0]:
                     st.link_button("Referencia", circuit_url, width="stretch")
