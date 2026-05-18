@@ -232,6 +232,20 @@ def get_setting(name: str, default: str = "") -> str:
         return default
 
 
+@st.cache_data(show_spinner=False)
+def render_pdf_pages_as_png(pdf_bytes: bytes, dpi: int = 150) -> list[bytes]:
+    import fitz
+
+    zoom = dpi / 72
+    matrix = fitz.Matrix(zoom, zoom)
+    pages: list[bytes] = []
+    with fitz.open(stream=pdf_bytes, filetype="pdf") as document:
+        for page in document:
+            pixmap = page.get_pixmap(matrix=matrix, alpha=False)
+            pages.append(pixmap.tobytes("png"))
+    return pages
+
+
 def render_pdf_viewer(pdf_path: Path, height: int = 780, key: str | None = None) -> None:
     if not pdf_path.exists():
         st.warning("No se encontró el archivo de presentación.")
@@ -248,22 +262,38 @@ def render_pdf_viewer(pdf_path: Path, height: int = 780, key: str | None = None)
     )
 
     try:
-        st.pdf(pdf_bytes, height=height, key=f"{key}_viewer" if key else None)
+        pages = render_pdf_pages_as_png(pdf_bytes)
+    except Exception as exc:
+        st.warning(f"No se pudo renderizar el PDF en pantalla: {exc}")
+        encoded_pdf = base64.b64encode(pdf_bytes).decode("ascii")
+        st.markdown(
+            f"""
+            <iframe
+                src="data:application/pdf;base64,{encoded_pdf}"
+                width="100%"
+                height="{height}"
+                style="border: 1px solid rgba(0, 48, 73, 0.18); border-radius: 8px;"
+            ></iframe>
+            """,
+            unsafe_allow_html=True,
+        )
         return
-    except Exception:
-        pass
 
-    encoded_pdf = base64.b64encode(pdf_bytes).decode("ascii")
-    st.markdown(
-        f"""
-        <iframe
-            src="data:application/pdf;base64,{encoded_pdf}"
-            width="100%"
-            height="{height}"
-            style="border: 1px solid rgba(0, 48, 73, 0.18); border-radius: 8px;"
-        ></iframe>
-        """,
-        unsafe_allow_html=True,
+    if not pages:
+        st.warning("El PDF no contiene páginas para mostrar.")
+        return
+
+    page_number = st.slider(
+        "Página",
+        min_value=1,
+        max_value=len(pages),
+        value=1,
+        key=f"{key}_page" if key else None,
+    )
+    st.image(
+        pages[page_number - 1],
+        caption=f"{pdf_path.name} - página {page_number} de {len(pages)}",
+        use_container_width=True,
     )
 
 
