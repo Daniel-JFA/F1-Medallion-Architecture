@@ -502,7 +502,6 @@ def load_all_data(
             SELECT *
             FROM f1_gold.vw_dashboard_circuit_risk
             ORDER BY non_classified_rate_pct DESC, total_entries DESC
-            LIMIT 25
             """,
         ),
         "qualifying": query(
@@ -1245,6 +1244,75 @@ def main() -> None:
                 return "Patrón histórico"
 
             story_risk["story_segment"] = story_risk.apply(classify_circuit, axis=1)
+            top_pole_circuits = (
+                story_risk.sort_values(
+                    ["pole_to_win_rate_pct", "total_entries"],
+                    ascending=[False, False],
+                )
+                .head(5)
+                .copy()
+            )
+            bottom_pole_circuits = (
+                story_risk.sort_values(
+                    ["pole_to_win_rate_pct", "total_entries"],
+                    ascending=[True, False],
+                )
+                .head(5)
+                .copy()
+            )
+            top_pole_circuits["pole_extreme_type"] = "Garantía"
+            bottom_pole_circuits["pole_extreme_type"] = "Riesgo"
+            top_bottom_circuits = pd.concat(
+                [bottom_pole_circuits, top_pole_circuits],
+                ignore_index=True,
+            )
+            top_bottom_circuits["circuit_story_label"] = (
+                top_bottom_circuits["circuit_name"]
+                + " ("
+                + top_bottom_circuits["country"].astype(str)
+                + ")"
+            )
+
+            extremes_fig = px.bar(
+                top_bottom_circuits.sort_values("pole_to_win_rate_pct", ascending=True),
+                x="pole_to_win_rate_pct",
+                y="circuit_story_label",
+                orientation="h",
+                color="pole_extreme_type",
+                text="pole_to_win_rate_pct",
+                labels={
+                    **COLUMN_LABELS,
+                    "circuit_story_label": "Circuito",
+                    "pole_extreme_type": "Lectura",
+                },
+                color_discrete_map={
+                    "Garantía": "#2a9d8f",
+                    "Riesgo": "#c1121f",
+                },
+                title="La Trampa vs. La Garantía: extremos del calendario",
+                hover_data={
+                    "country": False,
+                    "total_entries": True,
+                    "race_weekends_hosted": True,
+                    "non_classified_rate_pct": ":.2f",
+                    "pole_to_win_rate_pct": ":.2f",
+                    "pole_extreme_type": False,
+                    "circuit_story_label": False,
+                },
+            )
+            extremes_fig.update_traces(texttemplate="%{text:.1f}%", textposition="outside")
+            extremes_fig.update_xaxes(range=[0, 100], ticksuffix="%")
+            extremes_fig.update_layout(
+                xaxis_title="Conversión Pole a Victoria (%)",
+                yaxis_title="",
+                legend_title_text="Lectura",
+            )
+            st.plotly_chart(style_plot(extremes_fig), width="stretch")
+            st.caption(
+                "Lectura rápida: las barras muestran los cinco circuitos donde la Pole más se convierte en victoria "
+                "frente a los cinco donde la ventaja inicial pierde más fuerza."
+            )
+
             label_candidates = story_risk[
                 story_risk["story_segment"].isin(
                     [
