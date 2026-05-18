@@ -1,0 +1,704 @@
+[
+  {
+    "id": "adelaide",
+    "name": "Adelaide Street Circuit",
+    "countryId": "australia",
+    "latitude": -34.927222,
+    "longitude": 138.617222,
+    "layoutId": "adelaide-1",
+    "svg": "layouts/adelaide-1.svg"
+  },
+  {
+    "id": "aida",
+    "name": "Okayama International Circuit",
+    "countryId": "japan",
+    "latitude": 34.915,
+    "longitude": 134.221111,
+    "layoutId": "aida-1",
+    "svg": "layouts/aida-1.svg"
+  },
+  {
+    "id": "ain-diab",
+    "name": "Ain-Diab Circuit",
+    "countryId": "morocco",
+    "latitude": 33.578611,
+    "longitude": -7.6875,
+    "layoutId": "ain-diab-1",
+    "svg": "layouts/ain-diab-1.svg"
+  },
+  {
+    "id": "aintree",
+    "name": "Aintree Motor Racing Circuit",
+    "countryId": "united-kingdom",
+    "latitude": 53.476944,
+    "longitude": -2.940556,
+    "layoutId": "aintree-1",
+    "svg": "layouts/aintree-1.svg"
+  },
+  {
+    "id": "anderstorp",
+    "name": "Anderstorp Raceway",
+    "countryId": "sweden",
+    "latitude": 57.264167,
+    "longitude": 13.601389,
+    "layoutId": "anderstorp-1",
+    "svg": "layouts/anderstorp-1.svg"
+  },
+  {
+    "id": "austin",
+    "name": "Circuit of the Americas",
+    "countryId": "united-states-of-america",
+    "latitude": 30.132778,
+    "longitude": -97.641111,
+    "layoutId": "austin-1",
+    "svg": "layouts/austin-1.svg"
+  },
+  {
+    "id": "avus",
+    "name": "AVUS",
+    "countryId": "germany",
+    "latitude": 52.480556,
+    "longitude": 13.251389,
+    "layoutId": "avus-1",
+    "svg": "layouts/avus-1.svg"
+  },
+  {
+    "id": "bahrain",
+    "name": "Bahrain International Circuit",
+    "countryId": "bahrain",
+    "latitude": 26.0325,
+    "longitude": 50.510556,
+    "layoutId": "bahrain-3",
+    "svg": "layouts/bahrain-3.svg"
+  },
+  {
+    "id": "baku",
+    "name": "Baku City Circuit",
+    "countryId": "azerbaijan",
+    "latitude": 40.3725,
+    "longitude": 49.853333,
+    "layoutId": "baku-1",
+    "svg": "layouts/baku-1.svg"
+  },
+  {
+    "id": "brands-hatch",
+    "name": "Brands Hatch",
+    "countryId": "united-kingdom",
+    "latitude": 51.356667,
+    "longitude": 0.2625,
+    "layoutId": "brands-hatch-2",
+    "svg": "layouts/brands-hatch-2.svg"
+  },
+  {
+    "id": "bremgarten",
+    "name": "Circuit Bremgarten",
+    "countryId": "switzerland",
+    "latitude": 46.95,
+    "longitude": 7.410833,
+    "layoutId": "bremgarten-1",
+    "svg": "layouts/bremgarten-1.svg"
+  },
+  {
+    "id": "buddh",
+    "name": "Buddh International Circuit",
+    "countryId": "india",
+    "latitude": 28.350556,
+    "longitude": 77.535,
+    "layoutId": "buddh-1",
+    "svg": "layouts/buddh-1.svg"
+  },
+  {
+    "id": "buenos-aires",
+    "name": "Autódromo Juan y Oscar Gálvez",
+    "countryId": "argentina",
+    "latitude": -34.694272,
+    "longitude": -58.459347,
+    "layoutId": "buenos-aires-4",
+    "svg": "layouts/buenos-aires-4.svg"
+  },
+  {
+    "id": "bugatti",
+    "name": "Bugatti Circuit",
+    "countryId": "france",
+    "latitude": 47.937694,
+    "longitude": 0.225611,
+    "layoutId": "bugatti-1",
+    "svg": "layouts/bugatti-1.svg"
+  },
+  {
+    "id": "caesars-palace",
+    "name": "Caesars Palace",
+    "countryId": "united-states-of-america",
+    "latitude": 36.116944,
+    "longitude": -115.175,
+    "layoutId": "caesars-palace-1",
+    "svg": "layouts/caesars-palace-1.svg"
+  },
+  {
+    "id": "catalunya",
+    "name": "Circuit de Barcelona-Catalunya",
+    "countryId": "spain",
+    "latitude": 41.57,
+    "longitude": 2.261111,
+    "layoutId": "catalunya-6",
+    "svg": "layouts/catalunya-6.svg"
+  },
+  {
+    "id": "clermont-ferrand",
+    "name": "Charade Circuit",
+    "countryId": "france",
+    "latitude": 45.747222,
+    "longitude": 3.038889,
+    "layoutId": "clermont-ferrand-1",
+    "svg": "layouts/clermont-ferrand-1.svg"
+  },
+  {
+    "id": "dallas",
+    "name": "Fair Park",
+    "countryId": "united-states-of-america",
+    "latitude": 32.781944,
+    "longitude": -96.765556,
+    "layoutId": "dallas-1",
+    "svg": "layouts/dallas-1.svg"
+  },
+  {
+    "id": "detroit",
+    "name": "Detroit Street Circuit",
+    "countryId": "united-states-of-america",
+    "latitude": 42.32975,
+    "longitude": -83.040111,
+    "layoutId": "detroit-2",
+    "svg": "layouts/detroit-2.svg"
+  },
+  {
+    "id": "dijon",
+    "name": "Dijon-Prenois",
+    "countryId": "france",
+    "latitude": 47.3625,
+    "longitude": 4.899167,
+    "layoutId": "dijon-2",
+    "svg": "layouts/dijon-2.svg"
+  },
+  {
+    "id": "donington",
+    "name": "Donington Park",
+    "countryId": "united-kingdom",
+    "latitude": 52.829806,
+    "longitude": -1.379556,
+    "layoutId": "donington-1",
+    "svg": "layouts/donington-1.svg"
+  },
+  {
+    "id": "east-london",
+    "name": "Prince George Circuit",
+    "countryId": "south-africa",
+    "latitude": -33.048611,
+    "longitude": 27.873611,
+    "layoutId": "east-london-1",
+    "svg": "layouts/east-london-1.svg"
+  },
+  {
+    "id": "estoril",
+    "name": "Autódromo do Estoril",
+    "countryId": "portugal",
+    "latitude": 38.750833,
+    "longitude": -9.394167,
+    "layoutId": "estoril-2",
+    "svg": "layouts/estoril-2.svg"
+  },
+  {
+    "id": "fuji",
+    "name": "Fuji Speedway",
+    "countryId": "japan",
+    "latitude": 35.371667,
+    "longitude": 138.926667,
+    "layoutId": "fuji-2",
+    "svg": "layouts/fuji-2.svg"
+  },
+  {
+    "id": "hockenheimring",
+    "name": "Hockenheimring",
+    "countryId": "germany",
+    "latitude": 49.327778,
+    "longitude": 8.565833,
+    "layoutId": "hockenheimring-4",
+    "svg": "layouts/hockenheimring-4.svg"
+  },
+  {
+    "id": "hungaroring",
+    "name": "Hungaroring",
+    "countryId": "hungary",
+    "latitude": 47.582222,
+    "longitude": 19.251111,
+    "layoutId": "hungaroring-3",
+    "svg": "layouts/hungaroring-3.svg"
+  },
+  {
+    "id": "imola",
+    "name": "Autodromo Internazionale Enzo e Dino Ferrari",
+    "countryId": "italy",
+    "latitude": 44.341111,
+    "longitude": 11.713333,
+    "layoutId": "imola-3",
+    "svg": "layouts/imola-3.svg"
+  },
+  {
+    "id": "indianapolis",
+    "name": "Indianapolis Motor Speedway",
+    "countryId": "united-states-of-america",
+    "latitude": 39.798333,
+    "longitude": -86.232778,
+    "layoutId": "indianapolis-2",
+    "svg": "layouts/indianapolis-2.svg"
+  },
+  {
+    "id": "interlagos",
+    "name": "Autódromo José Carlos Pace",
+    "countryId": "brazil",
+    "latitude": -23.701111,
+    "longitude": -46.697222,
+    "layoutId": "interlagos-2",
+    "svg": "layouts/interlagos-2.svg"
+  },
+  {
+    "id": "istanbul",
+    "name": "Istanbul Park",
+    "countryId": "turkey",
+    "latitude": 40.951667,
+    "longitude": 29.405,
+    "layoutId": "istanbul-1",
+    "svg": "layouts/istanbul-1.svg"
+  },
+  {
+    "id": "jacarepagua",
+    "name": "Autódromo Internacional Nelson Piquet",
+    "countryId": "brazil",
+    "latitude": -22.975556,
+    "longitude": -43.395,
+    "layoutId": "jacarepagua-1",
+    "svg": "layouts/jacarepagua-1.svg"
+  },
+  {
+    "id": "jarama",
+    "name": "Circuito del Jarama",
+    "countryId": "spain",
+    "latitude": 40.617111,
+    "longitude": -3.585583,
+    "layoutId": "jarama-2",
+    "svg": "layouts/jarama-2.svg"
+  },
+  {
+    "id": "jeddah",
+    "name": "Jeddah Corniche Circuit",
+    "countryId": "saudi-arabia",
+    "latitude": 21.543333,
+    "longitude": 39.172778,
+    "layoutId": "jeddah-1",
+    "svg": "layouts/jeddah-1.svg"
+  },
+  {
+    "id": "jerez",
+    "name": "Circuito de Jerez",
+    "countryId": "spain",
+    "latitude": 36.708333,
+    "longitude": -6.034167,
+    "layoutId": "jerez-2",
+    "svg": "layouts/jerez-2.svg"
+  },
+  {
+    "id": "kyalami",
+    "name": "Kyalami Racing Circuit",
+    "countryId": "south-africa",
+    "latitude": -25.998611,
+    "longitude": 28.068889,
+    "layoutId": "kyalami-2",
+    "svg": "layouts/kyalami-2.svg"
+  },
+  {
+    "id": "las-vegas",
+    "name": "Las Vegas Street Circuit",
+    "countryId": "united-states-of-america",
+    "latitude": 36.175,
+    "longitude": -115.136389,
+    "layoutId": "las-vegas-1",
+    "svg": "layouts/las-vegas-1.svg"
+  },
+  {
+    "id": "long-beach",
+    "name": "Long Beach",
+    "countryId": "united-states-of-america",
+    "latitude": 33.766389,
+    "longitude": -118.192778,
+    "layoutId": "long-beach-3",
+    "svg": "layouts/long-beach-3.svg"
+  },
+  {
+    "id": "lusail",
+    "name": "Lusail International Circuit",
+    "countryId": "qatar",
+    "latitude": 25.49,
+    "longitude": 51.454167,
+    "layoutId": "lusail-1",
+    "svg": "layouts/lusail-1.svg"
+  },
+  {
+    "id": "madring",
+    "name": "Circuito de Madring",
+    "countryId": "spain",
+    "latitude": 40.465278,
+    "longitude": -3.615278,
+    "layoutId": "madring-1",
+    "svg": "layouts/madring-1.svg"
+  },
+  {
+    "id": "magny-cours",
+    "name": "Circuit de Nevers Magny-Cours",
+    "countryId": "france",
+    "latitude": 46.863242,
+    "longitude": 3.164228,
+    "layoutId": "magny-cours-3",
+    "svg": "layouts/magny-cours-3.svg"
+  },
+  {
+    "id": "marina-bay",
+    "name": "Marina Bay Street Circuit",
+    "countryId": "singapore",
+    "latitude": 1.291531,
+    "longitude": 103.86385,
+    "layoutId": "marina-bay-4",
+    "svg": "layouts/marina-bay-4.svg"
+  },
+  {
+    "id": "melbourne",
+    "name": "Melbourne Grand Prix Circuit",
+    "countryId": "australia",
+    "latitude": -37.849722,
+    "longitude": 144.968333,
+    "layoutId": "melbourne-2",
+    "svg": "layouts/melbourne-2.svg"
+  },
+  {
+    "id": "mexico-city",
+    "name": "Autódromo Hermanos Rodríguez",
+    "countryId": "mexico",
+    "latitude": 19.404197,
+    "longitude": -99.088747,
+    "layoutId": "mexico-city-3",
+    "svg": "layouts/mexico-city-3.svg"
+  },
+  {
+    "id": "miami",
+    "name": "Miami International Autodrome",
+    "countryId": "united-states-of-america",
+    "latitude": 25.958056,
+    "longitude": -80.238889,
+    "layoutId": "miami-1",
+    "svg": "layouts/miami-1.svg"
+  },
+  {
+    "id": "monaco",
+    "name": "Circuit de Monaco",
+    "countryId": "monaco",
+    "latitude": 43.734722,
+    "longitude": 7.420556,
+    "layoutId": "monaco-6",
+    "svg": "layouts/monaco-6.svg"
+  },
+  {
+    "id": "monsanto",
+    "name": "Circuito de Monsanto",
+    "countryId": "portugal",
+    "latitude": 38.719722,
+    "longitude": -9.203056,
+    "layoutId": "monsanto-1",
+    "svg": "layouts/monsanto-1.svg"
+  },
+  {
+    "id": "montjuic",
+    "name": "Circuito de Montjuïc",
+    "countryId": "spain",
+    "latitude": 41.366389,
+    "longitude": 2.151667,
+    "layoutId": "montjuic-1",
+    "svg": "layouts/montjuic-1.svg"
+  },
+  {
+    "id": "montreal",
+    "name": "Circuit Gilles Villeneuve",
+    "countryId": "canada",
+    "latitude": 45.500578,
+    "longitude": -73.522461,
+    "layoutId": "montreal-6",
+    "svg": "layouts/montreal-6.svg"
+  },
+  {
+    "id": "mont-tremblant",
+    "name": "Circuit Mont-Tremblant",
+    "countryId": "canada",
+    "latitude": 46.187707,
+    "longitude": -74.609936,
+    "layoutId": "mont-tremblant-1",
+    "svg": "layouts/mont-tremblant-1.svg"
+  },
+  {
+    "id": "monza",
+    "name": "Autodromo Nazionale Monza",
+    "countryId": "italy",
+    "latitude": 45.620556,
+    "longitude": 9.289444,
+    "layoutId": "monza-7",
+    "svg": "layouts/monza-7.svg"
+  },
+  {
+    "id": "mosport",
+    "name": "Canadian Tire Motorsport Park",
+    "countryId": "canada",
+    "latitude": 44.05,
+    "longitude": -78.677778,
+    "layoutId": "mosport-1",
+    "svg": "layouts/mosport-1.svg"
+  },
+  {
+    "id": "mugello",
+    "name": "Autodromo Internazionale del Mugello",
+    "countryId": "italy",
+    "latitude": 43.9975,
+    "longitude": 11.371944,
+    "layoutId": "mugello-1",
+    "svg": "layouts/mugello-1.svg"
+  },
+  {
+    "id": "nivelles",
+    "name": "Nivelles-Baulers",
+    "countryId": "belgium",
+    "latitude": 50.621111,
+    "longitude": 4.326944,
+    "layoutId": "nivelles-1",
+    "svg": "layouts/nivelles-1.svg"
+  },
+  {
+    "id": "nurburgring",
+    "name": "Nürburgring",
+    "countryId": "germany",
+    "latitude": 50.335556,
+    "longitude": 6.9475,
+    "layoutId": "nurburgring-4",
+    "svg": "layouts/nurburgring-4.svg"
+  },
+  {
+    "id": "paul-ricard",
+    "name": "Circuit Paul Ricard",
+    "countryId": "france",
+    "latitude": 43.250556,
+    "longitude": 5.791667,
+    "layoutId": "paul-ricard-3",
+    "svg": "layouts/paul-ricard-3.svg"
+  },
+  {
+    "id": "pedralbes",
+    "name": "Pedralbes Circuit",
+    "countryId": "spain",
+    "latitude": 41.390278,
+    "longitude": 2.116667,
+    "layoutId": "pedralbes-1",
+    "svg": "layouts/pedralbes-1.svg"
+  },
+  {
+    "id": "pescara",
+    "name": "Pescara Circuit",
+    "countryId": "italy",
+    "latitude": 42.475,
+    "longitude": 14.150833,
+    "layoutId": "pescara-1",
+    "svg": "layouts/pescara-1.svg"
+  },
+  {
+    "id": "phoenix",
+    "name": "Phoenix Street Circuit",
+    "countryId": "united-states-of-america",
+    "latitude": 33.447917,
+    "longitude": -112.074583,
+    "layoutId": "phoenix-2",
+    "svg": "layouts/phoenix-2.svg"
+  },
+  {
+    "id": "portimao",
+    "name": "Algarve International Circuit",
+    "countryId": "portugal",
+    "latitude": 37.221944,
+    "longitude": -8.629444,
+    "layoutId": "portimao-1",
+    "svg": "layouts/portimao-1.svg"
+  },
+  {
+    "id": "porto",
+    "name": "Circuito da Boavista",
+    "countryId": "portugal",
+    "latitude": 41.170472,
+    "longitude": -8.67325,
+    "layoutId": "porto-1",
+    "svg": "layouts/porto-1.svg"
+  },
+  {
+    "id": "reims",
+    "name": "Reims-Gueux",
+    "countryId": "france",
+    "latitude": 49.254075,
+    "longitude": 3.930561,
+    "layoutId": "reims-2",
+    "svg": "layouts/reims-2.svg"
+  },
+  {
+    "id": "riverside",
+    "name": "Riverside International Raceway",
+    "countryId": "united-states-of-america",
+    "latitude": 33.937,
+    "longitude": -117.272556,
+    "layoutId": "riverside-1",
+    "svg": "layouts/riverside-1.svg"
+  },
+  {
+    "id": "rouen",
+    "name": "Rouen-Les-Essarts",
+    "countryId": "france",
+    "latitude": 49.330639,
+    "longitude": 1.004583,
+    "layoutId": "rouen-2",
+    "svg": "layouts/rouen-2.svg"
+  },
+  {
+    "id": "sebring",
+    "name": "Sebring International Raceway",
+    "countryId": "united-states-of-america",
+    "latitude": 27.454741,
+    "longitude": -81.348267,
+    "layoutId": "sebring-1",
+    "svg": "layouts/sebring-1.svg"
+  },
+  {
+    "id": "sepang",
+    "name": "Sepang International Circuit",
+    "countryId": "malaysia",
+    "latitude": 2.760556,
+    "longitude": 101.7375,
+    "layoutId": "sepang-1",
+    "svg": "layouts/sepang-1.svg"
+  },
+  {
+    "id": "shanghai",
+    "name": "Shanghai International Circuit",
+    "countryId": "china",
+    "latitude": 31.338889,
+    "longitude": 121.219722,
+    "layoutId": "shanghai-1",
+    "svg": "layouts/shanghai-1.svg"
+  },
+  {
+    "id": "silverstone",
+    "name": "Silverstone Circuit",
+    "countryId": "united-kingdom",
+    "latitude": 52.078611,
+    "longitude": -1.016944,
+    "layoutId": "silverstone-8",
+    "svg": "layouts/silverstone-8.svg"
+  },
+  {
+    "id": "sochi",
+    "name": "Sochi Autodrom",
+    "countryId": "russia",
+    "latitude": 43.410278,
+    "longitude": 39.968271,
+    "layoutId": "sochi-1",
+    "svg": "layouts/sochi-1.svg"
+  },
+  {
+    "id": "spa-francorchamps",
+    "name": "Circuit de Spa-Francorchamps",
+    "countryId": "belgium",
+    "latitude": 50.437222,
+    "longitude": 5.971389,
+    "layoutId": "spa-francorchamps-4",
+    "svg": "layouts/spa-francorchamps-4.svg"
+  },
+  {
+    "id": "spielberg",
+    "name": "Red Bull Ring",
+    "countryId": "austria",
+    "latitude": 47.219722,
+    "longitude": 14.764722,
+    "layoutId": "spielberg-3",
+    "svg": "layouts/spielberg-3.svg"
+  },
+  {
+    "id": "suzuka",
+    "name": "Suzuka Circuit",
+    "countryId": "japan",
+    "latitude": 34.843056,
+    "longitude": 136.540556,
+    "layoutId": "suzuka-2",
+    "svg": "layouts/suzuka-2.svg"
+  },
+  {
+    "id": "valencia",
+    "name": "Valencia Street Circuit",
+    "countryId": "spain",
+    "latitude": 39.458778,
+    "longitude": -0.325556,
+    "layoutId": "valencia-1",
+    "svg": "layouts/valencia-1.svg"
+  },
+  {
+    "id": "watkins-glen",
+    "name": "Watkins Glen International",
+    "countryId": "united-states-of-america",
+    "latitude": 42.336944,
+    "longitude": -76.927222,
+    "layoutId": "watkins-glen-3",
+    "svg": "layouts/watkins-glen-3.svg"
+  },
+  {
+    "id": "yas-marina",
+    "name": "Yas Marina Circuit",
+    "countryId": "united-arab-emirates",
+    "latitude": 24.467222,
+    "longitude": 54.603056,
+    "layoutId": "yas-marina-2",
+    "svg": "layouts/yas-marina-2.svg"
+  },
+  {
+    "id": "yeongam",
+    "name": "Korea International Circuit",
+    "countryId": "south-korea",
+    "latitude": 34.733333,
+    "longitude": 126.416667,
+    "layoutId": "yeongam-1",
+    "svg": "layouts/yeongam-1.svg"
+  },
+  {
+    "id": "zandvoort",
+    "name": "Circuit Park Zandvoort",
+    "countryId": "netherlands",
+    "latitude": 52.388819,
+    "longitude": 4.540922,
+    "layoutId": "zandvoort-5",
+    "svg": "layouts/zandvoort-5.svg"
+  },
+  {
+    "id": "zeltweg",
+    "name": "Zeltweg",
+    "countryId": "austria",
+    "latitude": 47.202222,
+    "longitude": 14.742222,
+    "layoutId": "zeltweg-1",
+    "svg": "layouts/zeltweg-1.svg"
+  },
+  {
+    "id": "zolder",
+    "name": "Circuit Zolder",
+    "countryId": "belgium",
+    "latitude": 50.988889,
+    "longitude": 5.255556,
+    "layoutId": "zolder-2",
+    "svg": "layouts/zolder-2.svg"
+  }
+]

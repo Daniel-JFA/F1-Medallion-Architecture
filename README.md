@@ -104,6 +104,10 @@ Si necesitas reconstruir desde cero:
 - `DATABRICKS_CATALOG`: catalogo objetivo. Por defecto: `f1`.
 - `DATABRICKS_SQL_FILE`: lista separada por comas para `tools/run_databricks_sql.py`.
 
+## Creditos
+
+- Trazados SVG de circuitos: `julesr0y/f1-circuits-svg`, licencia CC BY 4.0. La licencia original esta incluida en `assets/f1_circuits_svg/LICENSE`.
+
 ## Validacion Rapida
 
 Despues de Gold:

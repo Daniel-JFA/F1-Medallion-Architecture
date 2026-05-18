@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import html
+import json
 import os
 from pathlib import Path
 
@@ -9,7 +10,6 @@ from databricks import sql as databricks_sql
 import pandas as pd
 import plotly.express as px
 import streamlit as st
-import streamlit.components.v1 as components
 
 
 st.set_page_config(
@@ -42,6 +42,7 @@ COLOR_SEQUENCE = [
 
 BASE_DIR = Path(__file__).resolve().parent
 PRESENTATION_PDF = BASE_DIR / "assets" / "F1_Telemetry_Blueprint.pdf"
+CIRCUIT_SVG_DIR = BASE_DIR / "assets" / "f1_circuits_svg"
 
 COLUMN_LABELS = {
     "season_year": "Temporada",
@@ -242,6 +243,22 @@ CUSTOM_CSS = """
         line-height: 1.35;
     }
 
+    .circuit-svg-frame {
+        background: #f7f7f7;
+        border-radius: 14px;
+        border: 1px solid rgba(0, 48, 73, 0.08);
+        padding: 0.85rem;
+        min-height: 280px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .circuit-svg-frame svg {
+        max-width: 100%;
+        height: 260px;
+    }
+
     [data-testid="stSidebar"] {
         background: linear-gradient(180deg, #f8f4ea 0%, #fffdf8 100%);
     }
@@ -433,33 +450,81 @@ def style_plot(fig):
     return fig
 
 
-def render_circuit_map(lat: float | None, lng: float | None, circuit_name: str) -> None:
-    if lat is None or lng is None or pd.isna(lat) or pd.isna(lng):
-        st.info("Este circuito no tiene coordenadas disponibles para el mapa.")
-        return
+def normalize_lookup(value: object) -> str:
+    text = str(value or "").lower()
+    replacements = {
+        "á": "a",
+        "à": "a",
+        "ä": "a",
+        "â": "a",
+        "ã": "a",
+        "é": "e",
+        "è": "e",
+        "ë": "e",
+        "ê": "e",
+        "í": "i",
+        "ï": "i",
+        "ó": "o",
+        "ö": "o",
+        "ô": "o",
+        "õ": "o",
+        "ú": "u",
+        "ü": "u",
+        "ñ": "n",
+        "ç": "c",
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    return "".join(character if character.isalnum() else "-" for character in text).strip("-")
 
-    lat = float(lat)
-    lng = float(lng)
-    delta = 0.055
-    title = html.escape(circuit_name)
-    map_url = (
-        "https://www.openstreetmap.org/export/embed.html"
-        f"?bbox={lng - delta}%2C{lat - delta}%2C{lng + delta}%2C{lat + delta}"
-        f"&layer=mapnik&marker={lat}%2C{lng}"
-    )
-    components.html(
-        f"""
-        <iframe
-            title="Mapa de {title}"
-            src="{map_url}"
-            width="100%"
-            height="245"
-            style="border: 1px solid rgba(0, 48, 73, 0.16); border-radius: 10px;"
-            loading="lazy">
-        </iframe>
-        """,
-        height=260,
-    )
+
+@st.cache_data(show_spinner=False)
+def load_circuit_svg_metadata() -> list[dict[str, object]]:
+    metadata_path = CIRCUIT_SVG_DIR / "circuits_metadata.json"
+    if not metadata_path.exists():
+        return []
+    return json.loads(metadata_path.read_text(encoding="utf-8"))
+
+
+def find_circuit_svg(circuit: pd.Series) -> tuple[Path | None, dict[str, object] | None]:
+    metadata = load_circuit_svg_metadata()
+    if not metadata:
+        return None, None
+
+    aliases = {
+        "americas": "austin",
+        "albert-park": "melbourne",
+        "red-bull-ring": "spielberg",
+        "catalunya": "catalunya",
+        "villeneuve": "montreal",
+        "ricard": "paul-ricard",
+        "rodriguez": "mexico-city",
+        "interlagos": "interlagos",
+        "jose-carlos-pace": "interlagos",
+        "jacarepagua": "jacarepagua",
+        "yas-marina": "yas-marina",
+    }
+    candidates = {
+        normalize_lookup(circuit.get("circuit_ref_normalized")),
+        normalize_lookup(circuit.get("circuit_name")),
+        normalize_lookup(circuit.get("location")),
+    }
+    alias_matches = {
+        alias_value
+        for alias_key, alias_value in aliases.items()
+        if any(alias_key in candidate for candidate in candidates)
+    }
+    candidates.update(alias_matches)
+
+    for item in metadata:
+        item_keys = {
+            normalize_lookup(item.get("id")),
+            normalize_lookup(item.get("name")),
+        }
+        if candidates & item_keys:
+            svg_path = CIRCUIT_SVG_DIR / str(item["svg"])
+            return (svg_path if svg_path.exists() else None), item
+    return None, None
 
 
 def translate_columns(df: pd.DataFrame, columns: list[str] | None = None) -> pd.DataFrame:
@@ -555,6 +620,7 @@ def load_all_data(
             """
             SELECT
                 cr.*,
+                dc.circuit_ref_normalized,
                 dc.location,
                 dc.lat,
                 dc.lng,
@@ -1083,7 +1149,7 @@ def main() -> None:
             st.plotly_chart(style_plot(cause_fig), width="stretch")
 
         st.subheader("Tarjetas de circuitos")
-        st.caption("Selecciona pistas para abrir su mapa y los indicadores más relevantes.")
+        st.caption("Selecciona pistas para abrir su trazado SVG y los indicadores más relevantes.")
         circuit_options = circuit_risk.sort_values(
             ["non_classified_rate_pct", "total_entries"],
             ascending=[False, False],
@@ -1112,19 +1178,36 @@ def main() -> None:
                         <div class="circuit-card-title">{html.escape(str(circuit["circuit_name"]))}</div>
                         <div class="circuit-card-subtitle">
                             {html.escape(location_label or "Ubicación no disponible")} ·
-                            Histórico desde {int(circuit["race_weekends_hosted"]) if pd.notna(circuit["race_weekends_hosted"]) else "N/D"} grandes premios registrados
+                            Histórico con {int(circuit["race_weekends_hosted"]) if pd.notna(circuit["race_weekends_hosted"]) else "N/D"} grandes premios registrados
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
-                map_col, info_col = st.columns([3, 2])
-                with map_col:
-                    render_circuit_map(
-                        circuit.get("lat"),
-                        circuit.get("lng"),
-                        str(circuit["circuit_name"]),
-                    )
+                track_col, info_col = st.columns([3, 2])
+                with track_col:
+                    svg_path, svg_metadata = find_circuit_svg(circuit)
+                    if svg_path:
+                        svg_markup = svg_path.read_text(encoding="utf-8")
+                        st.markdown(
+                            f'<div class="circuit-svg-frame">{svg_markup}</div>',
+                            unsafe_allow_html=True,
+                        )
+                        with svg_path.open("rb") as svg_file:
+                            st.download_button(
+                                "Descargar SVG",
+                                data=svg_file.read(),
+                                file_name=svg_path.name,
+                                mime="image/svg+xml",
+                                key=f"download_svg_{int(circuit['circuitId'])}",
+                                width="stretch",
+                            )
+                        if svg_metadata:
+                            st.caption(
+                                f"Layout SVG: `{svg_metadata['layoutId']}` · Fuente: `julesr0y/f1-circuits-svg` (CC BY 4.0)."
+                            )
+                    else:
+                        st.info("No se encontró un trazado SVG para este circuito.")
                 with info_col:
                     metric_cols = st.columns(2)
                     with metric_cols[0]:
