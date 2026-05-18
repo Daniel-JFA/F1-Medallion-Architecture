@@ -105,6 +105,9 @@ COLUMN_LABELS = {
     "unique_constructors": "Escuderias unicas",
     "pole_to_win_occurrences": "Poles convertidas",
     "pole_to_win_rate_pct": "Conversion pole-victoria %",
+    "decade": "Década",
+    "story_segment": "Lectura",
+    "anomaly_type": "Lectura del circuito",
     "winners_from_pole": "Victorias desde la pole",
     "front_row_podium_entries": "Podios desde primera fila",
     "front_row_podium_rate_pct": "Tasa podio primera fila %",
@@ -413,6 +416,30 @@ def translate_columns(df: pd.DataFrame, columns: list[str] | None = None) -> pd.
     return view.rename(columns=labels)
 
 
+def get_kpi_row(kpis: pd.DataFrame, kpi_code: str) -> pd.Series | None:
+    matches = kpis[kpis["kpi_code"] == kpi_code]
+    if matches.empty:
+        return None
+    return matches.iloc[0]
+
+
+def format_kpi_value(kpis: pd.DataFrame, kpi_code: str, fallback: str = "N/D") -> str:
+    row = get_kpi_row(kpis, kpi_code)
+    if row is None:
+        return fallback
+    return str(row.get("kpi_value_text") or fallback)
+
+
+def numeric_kpi_value(kpis: pd.DataFrame, kpi_code: str) -> float | None:
+    row = get_kpi_row(kpis, kpi_code)
+    if row is None:
+        return None
+    value = row.get("kpi_value_numeric")
+    if pd.isna(value):
+        return None
+    return float(value)
+
+
 def load_all_data(
     server_hostname: str,
     http_path: str,
@@ -485,6 +512,20 @@ def load_all_data(
             ORDER BY season_year
             """,
         ),
+        "pole_survival": query(
+            """
+            SELECT
+                COUNT(*) AS pole_entries,
+                SUM(CASE WHEN is_classified_finish THEN 1 ELSE 0 END) AS pole_classified_entries,
+                COUNT(*) - SUM(CASE WHEN is_classified_finish THEN 1 ELSE 0 END) AS pole_non_classified_entries,
+                ROUND(SUM(CASE WHEN is_classified_finish THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2)
+                    AS pole_classified_rate_pct,
+                ROUND((COUNT(*) - SUM(CASE WHEN is_classified_finish THEN 1 ELSE 0 END)) * 100.0 / COUNT(*), 2)
+                    AS pole_non_classified_rate_pct
+            FROM f1_silver.fact_race_entries
+            WHERE qualified_on_pole = true
+            """,
+        ),
         "weekends": query(
             """
             SELECT *
@@ -543,6 +584,7 @@ def main() -> None:
             "- `F1_gold.vw_dashboard_top_constructors`\n"
             "- `F1_gold.vw_dashboard_circuit_risk`\n"
             "- `F1_gold.mart_qualifying_effect_season`\n"
+            "- `F1_silver.fact_race_entries` (supervivencia desde pole)\n"
             "- `F1_gold.mart_race_weekend`\n"
             "- `F1_control.f1_gold_kpi_snapshot_history`"
         )
@@ -566,6 +608,7 @@ def main() -> None:
     top_constructors = data["top_constructors"]
     circuit_risk = data["circuit_risk"]
     qualifying = data["qualifying"]
+    pole_survival = data["pole_survival"]
     weekends = data["weekends"]
     snapshots = data["snapshots"]
 
@@ -624,6 +667,7 @@ def main() -> None:
             "Liderazgo Histórico",
             "Circuitos y Riesgo",
             "Clasificación",
+            "Storytelling Pole",
             "Carreras Recientes",
             "KPIs Versionados",
             "Arquitectura",
@@ -1030,6 +1074,176 @@ def main() -> None:
         )
 
     with tabs[5]:
+        st.subheader("Storytelling: El Mito de la Pole Position")
+        st.markdown(
+            """
+            En la Fórmula 1, se asume que ganar la clasificación del sábado garantiza
+            la carrera del domingo. Pero los datos históricos cuentan una historia más
+            interesante: riesgo, supervivencia, circuitos imposibles y épocas donde la
+            pole vale mucho más que en otras.
+            """
+        )
+        st.info(
+            "Pregunta guía: ¿cuánto influye realmente la clasificación en el resultado final?"
+        )
+
+        pole_to_win_value = format_kpi_value(kpis, "pole_to_win_rate_pct")
+        pole_to_win_numeric = numeric_kpi_value(kpis, "pole_to_win_rate_pct")
+        pole_survival_row = pole_survival.iloc[0] if not pole_survival.empty else None
+        pole_classified_rate = (
+            float(pole_survival_row["pole_classified_rate_pct"])
+            if pole_survival_row is not None and pd.notna(pole_survival_row["pole_classified_rate_pct"])
+            else None
+        )
+        pole_non_classified_rate = (
+            float(pole_survival_row["pole_non_classified_rate_pct"])
+            if pole_survival_row is not None and pd.notna(pole_survival_row["pole_non_classified_rate_pct"])
+            else None
+        )
+
+        impact_cols = st.columns(3)
+        with impact_cols[0]:
+            st.metric("Conversión de Pole a Victoria", pole_to_win_value)
+        with impact_cols[1]:
+            st.metric(
+                "Clasificación desde Pole",
+                f"{pole_classified_rate:.2f}%" if pole_classified_rate is not None else "N/D",
+            )
+        with impact_cols[2]:
+            st.metric(
+                "Abandono desde Pole",
+                f"{pole_non_classified_rate:.2f}%" if pole_non_classified_rate is not None else "N/D",
+            )
+
+        st.caption(
+            "Conversión tomada de `F1_gold.vw_dashboard_kpi_cards`; supervivencia desde pole calculada sobre `F1_silver.fact_race_entries`."
+        )
+
+        story_left, story_right = st.columns([3, 2])
+        with story_left:
+            decade_trend = qualifying.dropna(subset=["pole_to_win_rate_pct"]).copy()
+            if not decade_trend.empty:
+                decade_trend["decade_start"] = (decade_trend["season_year"] // 10) * 10
+                decade_trend["decade"] = decade_trend["decade_start"].astype(int).astype(str) + "s"
+                decade_summary = (
+                    decade_trend.groupby(["decade_start", "decade"], as_index=False)
+                    .agg(
+                        pole_to_win_rate_pct=("pole_to_win_rate_pct", "mean"),
+                        race_weekends=("race_weekends", "sum"),
+                        winners_from_pole=("winners_from_pole", "sum"),
+                    )
+                    .sort_values("decade_start")
+                )
+
+                decade_fig = px.line(
+                    decade_summary,
+                    x="decade",
+                    y="pole_to_win_rate_pct",
+                    markers=True,
+                    labels=COLUMN_LABELS,
+                    color_discrete_sequence=["#c1121f"],
+                    title="Evolución por década: ¿la Pole pesa más con el tiempo?",
+                    hover_data={
+                        "decade_start": False,
+                        "race_weekends": True,
+                        "winners_from_pole": True,
+                        "pole_to_win_rate_pct": ":.2f",
+                    },
+                )
+                st.plotly_chart(style_plot(decade_fig), width="stretch")
+
+                best_decade = decade_summary.sort_values("pole_to_win_rate_pct", ascending=False).iloc[0]
+                worst_decade = decade_summary.sort_values("pole_to_win_rate_pct", ascending=True).iloc[0]
+                st.caption(
+                    f"Punto de lectura: la década con mayor conversión fue {best_decade['decade']} "
+                    f"({best_decade['pole_to_win_rate_pct']:.2f}%), mientras que el punto más bajo "
+                    f"fue {worst_decade['decade']} ({worst_decade['pole_to_win_rate_pct']:.2f}%)."
+                )
+            else:
+                st.warning("No hay datos suficientes para construir la evolución por década.")
+
+        with story_right:
+            st.markdown(
+                """
+                **Lectura ejecutiva**
+
+                Una Pole Position no es solamente velocidad pura. Es una combinación de:
+
+                - dificultad de adelantar,
+                - confiabilidad mecánica,
+                - riesgo histórico del circuito,
+                - cambios reglamentarios,
+                - y capacidad del equipo para convertir ventaja en resultado.
+                """
+            )
+            if pole_to_win_numeric is not None:
+                st.success(
+                    f"En el histórico consolidado, la Pole se convierte en victoria el {pole_to_win_numeric:.2f}% de las veces."
+                )
+
+        story_risk = circuit_risk.dropna(
+            subset=["non_classified_rate_pct", "pole_to_win_rate_pct"]
+        ).copy()
+        if not story_risk.empty:
+            risk_threshold = story_risk["non_classified_rate_pct"].quantile(0.75)
+            pole_threshold = story_risk["pole_to_win_rate_pct"].quantile(0.75)
+            low_pole_threshold = story_risk["pole_to_win_rate_pct"].quantile(0.25)
+
+            def classify_circuit(row: pd.Series) -> str:
+                if (
+                    row["non_classified_rate_pct"] >= risk_threshold
+                    and row["pole_to_win_rate_pct"] >= pole_threshold
+                ):
+                    return "Pole protege en alto riesgo"
+                if (
+                    row["non_classified_rate_pct"] >= risk_threshold
+                    and row["pole_to_win_rate_pct"] <= low_pole_threshold
+                ):
+                    return "Riesgo supera la pole"
+                if row["pole_to_win_rate_pct"] >= pole_threshold:
+                    return "Control desde la pole"
+                return "Patrón histórico"
+
+            story_risk["story_segment"] = story_risk.apply(classify_circuit, axis=1)
+            circuit_story_fig = px.scatter(
+                story_risk,
+                x="non_classified_rate_pct",
+                y="pole_to_win_rate_pct",
+                size="total_entries",
+                color="story_segment",
+                hover_name="circuit_name",
+                hover_data={
+                    "country": True,
+                    "race_weekends_hosted": True,
+                    "total_entries": True,
+                    "non_classified_rate_pct": ":.2f",
+                    "pole_to_win_rate_pct": ":.2f",
+                    "story_segment": False,
+                },
+                labels=COLUMN_LABELS,
+                color_discrete_map={
+                    "Pole protege en alto riesgo": "#003049",
+                    "Riesgo supera la pole": "#c1121f",
+                    "Control desde la pole": "#f77f00",
+                    "Patrón histórico": "#669bbc",
+                },
+                title="Circuitos: supervivencia histórica vs valor de la Pole",
+            )
+            st.plotly_chart(style_plot(circuit_story_fig), width="stretch")
+            st.caption(
+                "Eje X: tasa histórica de abandonos/no clasificación del circuito. "
+                "Eje Y: conversión de Pole a Victoria. Los colores separan circuitos anómalos frente al patrón histórico."
+            )
+        else:
+            st.warning("No hay datos suficientes para cruzar riesgo de circuito y conversión de pole.")
+
+        st.success(
+            "Conclusión: la clasificación influye mucho, pero no actúa sola. "
+            "La Pole Position es una ventaja estratégica cuando el circuito permite control; "
+            "en trazados con alto riesgo histórico, la confiabilidad y la supervivencia pueden pesar tanto como la velocidad del sábado."
+        )
+
+    with tabs[6]:
         st.subheader("Carreras recientes y lectura narrativa")
         st.caption("Fuente: `F1_gold.mart_race_weekend`")
 
@@ -1094,7 +1308,7 @@ def main() -> None:
             hide_index=True,
         )
 
-    with tabs[6]:
+    with tabs[7]:
         st.subheader("KPIs versionados")
         st.caption("Fuente: `F1_control.f1_gold_kpi_snapshot_history`")
 
@@ -1142,7 +1356,7 @@ def main() -> None:
             with col_hist_2:
                 st.dataframe(latest_snapshot_table, width="stretch", hide_index=True)
 
-    with tabs[7]:
+    with tabs[8]:
         st.subheader("Arquitectura y recorrido hacia Gold")
         st.code("Databricks f1 -> f1_silver -> f1_gold -> f1_control")
         st.markdown(
@@ -1238,7 +1452,7 @@ def main() -> None:
         st.caption("Material complementario: `F1_Telemetry_Blueprint.pdf`")
         render_pdf_viewer(PRESENTATION_PDF, key="pdf_arquitectura")
 
-    with tabs[8]:
+    with tabs[9]:
         st.subheader("Blueprint de Telemetría F1")
         st.caption("Especificación técnica y arquitectura de datos de telemetría")
         render_pdf_viewer(PRESENTATION_PDF, key="pdf_telemetria")
