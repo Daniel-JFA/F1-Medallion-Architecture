@@ -1181,9 +1181,19 @@ def main() -> None:
                     f"En el histórico consolidado, la Pole se convierte en victoria el {pole_to_win_numeric:.2f}% de las veces."
                 )
 
-        story_risk = circuit_risk.dropna(
+        story_risk = circuit_risk.copy()
+        numeric_story_columns = [
+            "non_classified_rate_pct",
+            "pole_to_win_rate_pct",
+            "total_entries",
+            "race_weekends_hosted",
+        ]
+        for column in numeric_story_columns:
+            if column in story_risk.columns:
+                story_risk[column] = pd.to_numeric(story_risk[column], errors="coerce")
+        story_risk = story_risk.dropna(
             subset=["non_classified_rate_pct", "pole_to_win_rate_pct"]
-        ).copy()
+        )
         if not story_risk.empty:
             risk_threshold = story_risk["non_classified_rate_pct"].quantile(0.75)
             pole_threshold = story_risk["pole_to_win_rate_pct"].quantile(0.75)
