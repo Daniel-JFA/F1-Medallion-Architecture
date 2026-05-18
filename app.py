@@ -221,34 +221,51 @@ CUSTOM_CSS = """
     }
 
     .circuit-card {
-        background: #ffffff;
-        border: 1px solid rgba(0, 48, 73, 0.12);
-        border-left: 5px solid #669bbc;
-        border-radius: 14px;
-        padding: 0.9rem 1rem;
-        margin-bottom: 0.65rem;
-        box-shadow: 0 8px 20px rgba(16, 47, 61, 0.07);
+        background:
+            linear-gradient(135deg, rgba(0, 48, 73, 0.98), rgba(8, 20, 28, 0.98)),
+            radial-gradient(circle at top left, rgba(102, 155, 188, 0.25), transparent 34%);
+        border: 1px solid rgba(102, 155, 188, 0.38);
+        border-radius: 18px;
+        padding: 1rem;
+        margin: 1rem 0 1.35rem;
+        box-shadow: 0 18px 36px rgba(0, 25, 40, 0.22);
+        color: #ffffff;
+        overflow: hidden;
     }
 
     .circuit-card-title {
-        color: #003049;
-        font-size: 1.05rem;
+        color: #ffffff;
+        font-size: 1.35rem;
         font-weight: 800;
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.15rem;
+        text-transform: uppercase;
     }
 
     .circuit-card-subtitle {
-        color: #5f4b32;
+        color: #cfe8f6;
         font-size: 0.9rem;
         line-height: 1.35;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .circuit-card-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.7fr) minmax(220px, 0.8fr);
+        gap: 1rem;
+        margin-top: 0.9rem;
     }
 
     .circuit-svg-frame {
-        background: #f7f7f7;
+        background:
+            linear-gradient(rgba(102, 155, 188, 0.08) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(102, 155, 188, 0.08) 1px, transparent 1px),
+            #f7fbfd;
+        background-size: 22px 22px;
         border-radius: 14px;
-        border: 1px solid rgba(0, 48, 73, 0.08);
-        padding: 0.85rem;
-        min-height: 280px;
+        border: 1px solid rgba(102, 155, 188, 0.38);
+        padding: 1rem;
+        min-height: 300px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -256,7 +273,59 @@ CUSTOM_CSS = """
 
     .circuit-svg-frame svg {
         max-width: 100%;
-        height: 260px;
+        height: 280px;
+    }
+
+    .circuit-kpi-panel {
+        display: grid;
+        gap: 0.65rem;
+    }
+
+    .circuit-kpi {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(252, 191, 73, 0.28);
+        border-radius: 12px;
+        padding: 0.8rem;
+    }
+
+    .circuit-kpi-label {
+        color: #cfe8f6;
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.2rem;
+    }
+
+    .circuit-kpi-value {
+        color: #fcf6e8;
+        font-size: 1.55rem;
+        font-weight: 900;
+        line-height: 1.05;
+    }
+
+    .circuit-card-note {
+        color: #fcf6e8;
+        border-top: 1px solid rgba(102, 155, 188, 0.26);
+        font-size: 0.86rem;
+        margin-top: 0.9rem;
+        padding-top: 0.75rem;
+    }
+
+    .circuit-card-source {
+        color: #9fc6d9;
+        font-size: 0.78rem;
+        margin-top: 0.55rem;
+    }
+
+    @media (max-width: 900px) {
+        .circuit-card-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .circuit-svg-frame svg {
+            height: 220px;
+        }
     }
 
     [data-testid="stSidebar"] {
@@ -525,6 +594,14 @@ def find_circuit_svg(circuit: pd.Series) -> tuple[Path | None, dict[str, object]
             svg_path = CIRCUIT_SVG_DIR / str(item["svg"])
             return (svg_path if svg_path.exists() else None), item
     return None, None
+
+
+def format_pct(value: object) -> str:
+    return f"{float(value):.2f}%" if pd.notna(value) else "N/D"
+
+
+def format_int(value: object) -> str:
+    return f"{int(value):,}".replace(",", ".") if pd.notna(value) else "N/D"
 
 
 def translate_columns(df: pd.DataFrame, columns: list[str] | None = None) -> pd.DataFrame:
@@ -1154,92 +1231,94 @@ def main() -> None:
             ["non_classified_rate_pct", "total_entries"],
             ascending=[False, False],
         )["circuit_name"].dropna().tolist()
-        selected_circuits = st.multiselect(
-            "Circuitos a explorar",
+        selected_circuit = st.selectbox(
+            "Circuito a explorar",
             options=circuit_options,
-            default=circuit_options[:4],
-            max_selections=8,
-            help="Por rendimiento se muestran hasta ocho tarjetas a la vez.",
+            index=0,
+            help="Selecciona una pista para abrir su ficha técnica visual.",
         )
 
         selected_circuit_data = circuit_risk[
-            circuit_risk["circuit_name"].isin(selected_circuits)
-        ].sort_values("non_classified_rate_pct", ascending=False)
+            circuit_risk["circuit_name"].eq(selected_circuit)
+        ]
         for _, circuit in selected_circuit_data.iterrows():
             location_parts = [
                 str(circuit.get("location", "") or "").strip(),
                 str(circuit.get("country", "") or "").strip(),
             ]
             location_label = ", ".join(part for part in location_parts if part)
-            with st.expander(f"{circuit['circuit_name']} - {location_label}", expanded=False):
-                st.markdown(
-                    f"""
-                    <div class="circuit-card">
-                        <div class="circuit-card-title">{html.escape(str(circuit["circuit_name"]))}</div>
-                        <div class="circuit-card-subtitle">
-                            {html.escape(location_label or "Ubicación no disponible")} ·
-                            Histórico con {int(circuit["race_weekends_hosted"]) if pd.notna(circuit["race_weekends_hosted"]) else "N/D"} grandes premios registrados
+            svg_path, svg_metadata = find_circuit_svg(circuit)
+            if svg_path:
+                svg_markup = svg_path.read_text(encoding="utf-8")
+                svg_source = (
+                    f"Layout SVG: {html.escape(str(svg_metadata['layoutId']))} · "
+                    "Fuente: julesr0y/f1-circuits-svg (CC BY 4.0)."
+                ) if svg_metadata else "Fuente: julesr0y/f1-circuits-svg (CC BY 4.0)."
+            else:
+                svg_markup = "<div>No se encontró un trazado SVG para este circuito.</div>"
+                svg_source = "Sin trazado SVG disponible para este circuito."
+
+            circuit_url = str(circuit.get("url", "") or "").strip()
+            st.markdown(
+                f"""
+                <div class="circuit-card">
+                    <div class="circuit-card-subtitle">
+                        {html.escape(str(circuit.get("country", "") or "Gran Premio"))}
+                    </div>
+                    <div class="circuit-card-title">
+                        {html.escape(str(circuit["circuit_name"]))}
+                    </div>
+                    <div class="circuit-card-subtitle">
+                        {html.escape(location_label or "Ubicación no disponible")}
+                    </div>
+                    <div class="circuit-card-grid">
+                        <div class="circuit-svg-frame">
+                            {svg_markup}
+                        </div>
+                        <div class="circuit-kpi-panel">
+                            <div class="circuit-kpi">
+                                <div class="circuit-kpi-label">Pole a victoria</div>
+                                <div class="circuit-kpi-value">{format_pct(circuit["pole_to_win_rate_pct"])}</div>
+                            </div>
+                            <div class="circuit-kpi">
+                                <div class="circuit-kpi-label">No clasificación</div>
+                                <div class="circuit-kpi-value">{format_pct(circuit["non_classified_rate_pct"])}</div>
+                            </div>
+                            <div class="circuit-kpi">
+                                <div class="circuit-kpi-label">Entradas históricas</div>
+                                <div class="circuit-kpi-value">{format_int(circuit["total_entries"])}</div>
+                            </div>
+                            <div class="circuit-kpi">
+                                <div class="circuit-kpi-label">Grandes premios</div>
+                                <div class="circuit-kpi-value">{format_int(circuit["race_weekends_hosted"])}</div>
+                            </div>
                         </div>
                     </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-                track_col, info_col = st.columns([3, 2])
-                with track_col:
-                    svg_path, svg_metadata = find_circuit_svg(circuit)
-                    if svg_path:
-                        svg_markup = svg_path.read_text(encoding="utf-8")
-                        st.markdown(
-                            f'<div class="circuit-svg-frame">{svg_markup}</div>',
-                            unsafe_allow_html=True,
+                    <div class="circuit-card-note">
+                        Abandonos mecánicos: <strong>{format_int(circuit["mechanical_non_classified_entries"])}</strong>
+                        · Incidentes/accidentes: <strong>{format_int(circuit["accident_non_classified_entries"])}</strong>
+                        · Descalificaciones: <strong>{format_int(circuit["disqualified_entries"])}</strong>
+                    </div>
+                    <div class="circuit-card-source">{svg_source}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            action_cols = st.columns([1, 1, 3])
+            if svg_path:
+                with action_cols[0]:
+                    with svg_path.open("rb") as svg_file:
+                        st.download_button(
+                            "Descargar SVG",
+                            data=svg_file.read(),
+                            file_name=svg_path.name,
+                            mime="image/svg+xml",
+                            key=f"download_svg_{int(circuit['circuitId'])}",
+                            width="stretch",
                         )
-                        with svg_path.open("rb") as svg_file:
-                            st.download_button(
-                                "Descargar SVG",
-                                data=svg_file.read(),
-                                file_name=svg_path.name,
-                                mime="image/svg+xml",
-                                key=f"download_svg_{int(circuit['circuitId'])}",
-                                width="stretch",
-                            )
-                        if svg_metadata:
-                            st.caption(
-                                f"Layout SVG: `{svg_metadata['layoutId']}` · Fuente: `julesr0y/f1-circuits-svg` (CC BY 4.0)."
-                            )
-                    else:
-                        st.info("No se encontró un trazado SVG para este circuito.")
-                with info_col:
-                    metric_cols = st.columns(2)
-                    with metric_cols[0]:
-                        st.metric(
-                            "No clasificación",
-                            f"{float(circuit['non_classified_rate_pct']):.2f}%"
-                            if pd.notna(circuit["non_classified_rate_pct"])
-                            else "N/D",
-                        )
-                    with metric_cols[1]:
-                        st.metric(
-                            "Pole a victoria",
-                            f"{float(circuit['pole_to_win_rate_pct']):.2f}%"
-                            if pd.notna(circuit["pole_to_win_rate_pct"])
-                            else "N/D",
-                        )
-                    st.metric(
-                        "Participaciones históricas",
-                        f"{int(circuit['total_entries']):,}".replace(",", ".")
-                        if pd.notna(circuit["total_entries"])
-                        else "N/D",
-                    )
-                    st.markdown(
-                        f"""
-                        - Abandonos mecánicos: **{int(circuit["mechanical_non_classified_entries"]) if pd.notna(circuit["mechanical_non_classified_entries"]) else "N/D"}**
-                        - Incidentes/accidentes: **{int(circuit["accident_non_classified_entries"]) if pd.notna(circuit["accident_non_classified_entries"]) else "N/D"}**
-                        - Descalificaciones: **{int(circuit["disqualified_entries"]) if pd.notna(circuit["disqualified_entries"]) else "N/D"}**
-                        """
-                    )
-                    circuit_url = str(circuit.get("url", "") or "").strip()
-                    if circuit_url:
-                        st.link_button("Abrir referencia del circuito", circuit_url, width="stretch")
+            if circuit_url:
+                with action_cols[1 if svg_path else 0]:
+                    st.link_button("Referencia", circuit_url, width="stretch")
 
         st.dataframe(translate_columns(circuit_risk), width="stretch", hide_index=True)
 
