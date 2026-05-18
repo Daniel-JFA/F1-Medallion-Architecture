@@ -670,7 +670,7 @@ def main() -> None:
             "Carreras Recientes",
             "KPIs Versionados",
             "Arquitectura",
-            "Telemetría",
+            "Presentación PDF",
         ]
     )
 
@@ -1664,15 +1664,10 @@ low_pole_threshold = story_risk["pole_to_win_rate_pct"].quantile(0.25)
         )
         st.dataframe(gold_objects, width="stretch", hide_index=True)
 
-        st.divider()
-        st.subheader("Presentación del proyecto")
-        st.caption("Material complementario: `F1_Telemetry_Blueprint.pdf`")
-        render_pdf_viewer(PRESENTATION_PDF, key="pdf_arquitectura")
-
     with tabs[9]:
-        st.subheader("Blueprint de Telemetría F1")
-        st.caption("Especificación técnica y arquitectura de datos de telemetría")
-        render_pdf_viewer(PRESENTATION_PDF, key="pdf_telemetria")
+        st.subheader("Presentación PDF del proyecto")
+        st.caption("Material complementario: `F1_Telemetry_Blueprint.pdf`")
+        render_pdf_viewer(PRESENTATION_PDF, key="pdf_presentacion")
 
 
 if __name__ == "__main__":
